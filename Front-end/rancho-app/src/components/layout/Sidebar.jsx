@@ -8,12 +8,13 @@ import {
 
 const NAV_ITEMS = [
   { id: 'dashboard',   label: 'Inicio',       icon: LayoutDashboard },
-  { id: 'ganado',      label: 'Ganado',        icon: Beef            },
-  { id: 'ventas',      label: 'Ventas',        icon: TrendingUp      },
-  { id: 'vacunacion',  label: 'Vacunación',    icon: Syringe         },
-  { id: 'inventario',  label: 'Inventario',    icon: Package         },
-  { id: 'clientes',    label: 'Clientes',      icon: Users           },
-  { id: 'calendario',  label: 'Calendario',    icon: CalendarDays    },
+  { id: 'empleados',   label: 'Empleados',    icon: Users           },
+  { id: 'ganado',      label: 'Ganado',       icon: Beef            },
+  { id: 'ventas',      label: 'Ventas',       icon: TrendingUp      },
+  { id: 'vacunacion',  label: 'Vacunación',   icon: Syringe         },
+  { id: 'inventario',  label: 'Inventario',   icon: Package         },
+  { id: 'clientes',    label: 'Clientes',     icon: Users           },
+  { id: 'calendario',  label: 'Calendario',   icon: CalendarDays    },
 ];
 
 export default function Sidebar({ activeView, setActiveView, collapsed, setCollapsed, onLogout }) {
@@ -28,7 +29,6 @@ export default function Sidebar({ activeView, setActiveView, collapsed, setColla
     >
       {/* ── Logo ──────────────────────────────────────────── */}
       <div className={`flex items-center gap-3 px-4 py-5 border-b border-slate-700/60 ${collapsed ? 'justify-center' : ''}`}>
-        {/* Ícono del rancho */}
         <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-emerald-600 flex items-center justify-center font-bold text-white text-sm select-none">
           PP
         </div>
@@ -91,7 +91,15 @@ export default function Sidebar({ activeView, setActiveView, collapsed, setColla
         <ul className="space-y-0.5 px-2">
           <li>
             <button
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-colors ${collapsed ? 'justify-center' : ''}`}
+              onClick={() => setActiveView('configuracion')}
+              className={`
+                w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
+                transition-colors duration-150
+                ${activeView === 'configuracion'
+                  ? 'bg-emerald-600 text-white'
+                  : 'text-slate-400 hover:bg-slate-800 hover:text-white'}
+                ${collapsed ? 'justify-center' : ''}
+              `}
               title={collapsed ? 'Configuración' : undefined}
             >
               <Settings size={18} className="flex-shrink-0" />

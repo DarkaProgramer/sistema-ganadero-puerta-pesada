@@ -1,76 +1,135 @@
-// GanadoView.jsx — Gestión de ganado con tabla, filtros y modal de registro
+// GanadoView.jsx — Gestión de ganado conectada al Backend y formulario modular
 
-import { useState } from 'react';
-import { Plus, Search, Filter, Beef } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, Search, Filter, Beef, Trash2, Edit3, Tag } from 'lucide-react';
 import Badge from '../components/ui/Badge';
-import Modal from '../components/ui/Modal';
-import { animales as initialAnimales, corrales } from '../data/mockData';
+import AnimalForm from './forms/AnimalForm';
 
-const RAZAS    = ['Brahman', 'Angus', 'Charolais', 'Simmental', 'Cebú', 'Criollo'];
-const ESTADOS  = ['activo', 'vendido', 'enfermo'];
-const GENEROS  = ['Macho', 'Hembra'];
-
-const FORM_INITIAL = {
-  arete: '', nombre: '', raza: RAZAS[0], genero: GENEROS[0],
-  fechaNacimiento: '', corral: corrales[0], peso: '',
-};
+const ESTADOS = ['Vivo', 'Vendido', 'Muerto'];
 
 export default function GanadoView({ showToast }) {
-  const [animales, setAnimales] = useState(initialAnimales);
+  const [animales, setAnimales] = useState([]);
+  const [corrales, setCorrales] = useState([]);
+  const [tiposAnimal, setTiposAnimal] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const [busqueda, setBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('todos');
   const [filtroCorral, setFiltroCorral] = useState('todos');
+
   const [modalOpen, setModalOpen] = useState(false);
-  const [form, setForm]           = useState(FORM_INITIAL);
-  const [formError, setFormError] = useState('');
+  const [animalSeleccionado, setAnimalSeleccionado] = useState(null);
+
+  // ── Cargar datos del backend de forma limpia ────────────────
+  useEffect(() => {
+    let isMounted = true;
+
+    const cargarDatos = async () => {
+      try {
+        const [resAnimales, resCatalogos] = await Promise.all([
+          fetch('http://localhost:4000/api/animales'),
+          fetch('http://localhost:4000/api/animales/catalogos')
+        ]);
+
+        const dataAnimales = await resAnimales.json();
+        const dataCatalogos = await resCatalogos.json();
+
+        if (isMounted) {
+          if (resAnimales.ok) setAnimales(dataAnimales);
+          if (resCatalogos.ok) {
+            setCorrales(dataCatalogos.corrales || []);
+            setTiposAnimal(dataCatalogos.tiposAnimal || []);
+          }
+        }
+      } catch (err) {
+        console.error('Error al sincronizar con el servidor:', err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    cargarDatos();
+
+    return () => { isMounted = false; };
+  }, []);
+
+  const recargarDatos = async () => {
+    try {
+      const res = await fetch('http://localhost:4000/api/animales');
+      const data = await res.json();
+      if (res.ok) setAnimales(data);
+    } catch (err) {
+      console.error('Error al recargar:', err);
+    }
+  };
 
   // ── Filtrado ──────────────────────────────────────────────
   const filtrados = animales.filter(a => {
-    const matchEstado = filtroEstado === 'todos' || a.estado === filtroEstado;
-    const matchCorral = filtroCorral === 'todos' || a.corral === filtroCorral;
-    const matchBusq   = busqueda === '' || 
-      a.arete.toLowerCase().includes(busqueda.toLowerCase()) ||
-      a.nombre.toLowerCase().includes(busqueda.toLowerCase());
+    const matchEstado = filtroEstado === 'todos' || a.estado.toLowerCase() === filtroEstado.toLowerCase();
+    const matchCorral = filtroCorral === 'todos' || String(a.idCorral) === String(filtroCorral);
+    const matchBusq = busqueda === '' || 
+      a.areteBandera.toLowerCase().includes(busqueda.toLowerCase()) ||
+      (a.nombre && a.nombre.toLowerCase().includes(busqueda.toLowerCase()));
     return matchEstado && matchCorral && matchBusq;
   });
 
-  // ── Conteos rápidos ───────────────────────────────────────
-  const totalActivos  = animales.filter(a => a.estado === 'activo').length;
-  const totalVendidos = animales.filter(a => a.estado === 'vendido').length;
-  const totalEnfermos = animales.filter(a => a.estado === 'enfermo').length;
+  const totalActivos = animales.filter(a => a.estado.toLowerCase() === 'vivo').length;
+  const totalVendidos = animales.filter(a => a.estado.toLowerCase() === 'vendido').length;
+  const totalMuertos = animales.filter(a => a.estado.toLowerCase() === 'muerto').length;
 
-  // ── Registrar nuevo animal ────────────────────────────────
-  const handleRegistrar = (e) => {
-    e.preventDefault();
-    if (!form.arete || !form.fechaNacimiento) {
-      setFormError('El número de arete y la fecha de nacimiento son obligatorios.');
-      return;
+  // ── Guardar (Crear o Actualizar) ──────────────────────────
+  const handleGuardar = async (formData) => {
+    try {
+      const url = animalSeleccionado 
+        ? `http://localhost:4000/api/animales/${animalSeleccionado.idAnimal}`
+        : 'http://localhost:4000/api/animales/registro';
+      
+      const method = animalSeleccionado ? 'PUT' : 'POST';
+
+      const respuesta = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      const datos = await respuesta.json();
+
+      if (respuesta.ok) {
+        setModalOpen(false);
+        setAnimalSeleccionado(null);
+        recargarDatos();
+        showToast({ 
+          message: animalSeleccionado ? 'Animal actualizado correctamente.' : `Animal ${formData.areteBandera} registrado exitosamente.`, 
+          type: 'success' 
+        });
+      } else {
+        alert(datos.error || 'Ocurrió un error al guardar.');
+      }
+    } catch {
+      alert('Error de red al conectar con el servidor.');
     }
-    if (animales.find(a => a.arete === form.arete)) {
-      setFormError(`El arete ${form.arete} ya está registrado.`);
-      return;
+  };
+
+  // ── Eliminar animal ───────────────────────────────────────
+  const handleEliminar = async (id, arete) => {
+    if (!confirm(`¿Estás seguro de eliminar el registro del animal con arete ${arete}?`)) return;
+    try {
+      const res = await fetch(`http://localhost:4000/api/animales/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        recargarDatos();
+        showToast({ message: `Animal ${arete} eliminado del sistema.`, type: 'info' });
+      } else {
+        alert('No se pudo eliminar el animal.');
+      }
+    } catch {
+      alert('Error de red al intentar eliminar.');
     }
-    const nuevo = {
-      id: animales.length + 1,
-      arete: form.arete,
-      nombre: form.nombre || '—',
-      raza: form.raza,
-      genero: form.genero,
-      fechaNacimiento: form.fechaNacimiento,
-      corral: form.corral,
-      estado: 'activo',
-      peso: Number(form.peso) || 0,
-    };
-    setAnimales(prev => [nuevo, ...prev]);
-    setModalOpen(false);
-    setForm(FORM_INITIAL);
-    setFormError('');
-    showToast({ message: `Animal ${nuevo.arete} registrado exitosamente.`, type: 'success' });
   };
 
   const calcEdad = (fechaNac) => {
-    const hoy   = new Date();
-    const nac   = new Date(fechaNac);
+    if (!fechaNac) return 'N/D';
+    const hoy = new Date();
+    const nac = new Date(fechaNac);
     const meses = (hoy.getFullYear() - nac.getFullYear()) * 12 + (hoy.getMonth() - nac.getMonth());
     if (meses < 12) return `${meses} meses`;
     return `${Math.floor(meses / 12)} años`;
@@ -82,10 +141,10 @@ export default function GanadoView({ showToast }) {
       {/* ── Chips de resumen ─────────────────────────────── */}
       <div className="flex flex-wrap gap-3">
         {[
-          { label: 'Activos',   count: totalActivos,  color: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
-          { label: 'Vendidos',  count: totalVendidos, color: 'text-slate-600 bg-slate-50 border-slate-200'       },
-          { label: 'Enfermos',  count: totalEnfermos, color: 'text-red-700 bg-red-50 border-red-200'             },
-          { label: 'Total',     count: animales.length, color: 'text-slate-700 bg-white border-slate-200 font-semibold' },
+          { label: 'Activos (Vivos)', count: totalActivos, color: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
+          { label: 'Vendidos', count: totalVendidos, color: 'text-slate-600 bg-slate-50 border-slate-200' },
+          { label: 'Muertos / Baja', count: totalMuertos, color: 'text-red-700 bg-red-50 border-red-200' },
+          { label: 'Total', count: animales.length, color: 'text-slate-700 bg-white border-slate-200 font-semibold' },
         ].map(({ label, count, color }) => (
           <div key={label} className={`px-4 py-2 rounded-lg border text-sm ${color}`}>
             <span className="font-bold text-base mr-1">{count}</span>{label}
@@ -119,7 +178,7 @@ export default function GanadoView({ showToast }) {
                 className="bg-transparent focus:outline-none text-sm"
               >
                 <option value="todos">Todos los estados</option>
-                {ESTADOS.map(e => <option key={e} value={e}>{e.charAt(0).toUpperCase() + e.slice(1)}</option>)}
+                {ESTADOS.map(e => <option key={e} value={e}>{e}</option>)}
               </select>
             </div>
 
@@ -131,13 +190,13 @@ export default function GanadoView({ showToast }) {
                 className="bg-transparent focus:outline-none text-sm"
               >
                 <option value="todos">Todos los corrales</option>
-                {corrales.map(c => <option key={c} value={c}>Corral {c}</option>)}
+                {corrales.map(c => <option key={c.idCorral} value={c.idCorral}>{c.nombre}</option>)}
               </select>
             </div>
 
             {/* Botón nuevo */}
             <button
-              onClick={() => setModalOpen(true)}
+              onClick={() => { setAnimalSeleccionado(null); setModalOpen(true); }}
               className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
             >
               <Plus size={15} />
@@ -151,13 +210,19 @@ export default function GanadoView({ showToast }) {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide">
-                {['Arete', 'Nombre', 'Raza', 'Género', 'Edad', 'Peso (kg)', 'Corral', 'Estado'].map(h => (
+                {['Arete Bandera', 'Nombre', 'Tipo / Raza', 'Género', 'Edad', 'Corral', 'Estado', 'Acciones'].map(h => (
                   <th key={h} className="text-left px-4 py-3 font-medium whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {filtrados.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="px-4 py-10 text-center text-slate-400 text-sm">
+                    Cargando inventario de ganado...
+                  </td>
+                </tr>
+              ) : filtrados.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="px-4 py-10 text-center text-slate-400 text-sm">
                     <Beef size={32} className="mx-auto mb-2 opacity-30" />
@@ -165,19 +230,45 @@ export default function GanadoView({ showToast }) {
                   </td>
                 </tr>
               ) : filtrados.map(a => (
-                <tr key={a.id} className="hover:bg-slate-50/70 transition-colors">
-                  <td className="px-4 py-3 font-mono text-xs font-semibold text-emerald-700">{a.arete}</td>
-                  <td className="px-4 py-3 text-slate-700 font-medium">{a.nombre}</td>
-                  <td className="px-4 py-3 text-slate-600">{a.raza}</td>
+                <tr key={a.idAnimal} className="hover:bg-slate-50/70 transition-colors">
+                  <td className="px-4 py-3 font-mono text-xs font-semibold text-emerald-700">
+                    <div className="flex items-center gap-2">
+                      <Tag size={14} className="text-emerald-500" />
+                      <div>
+                        {a.areteBandera}
+                        {a.areteBoton && <span className="block text-[10px] text-slate-400 font-normal">Botón: {a.areteBoton}</span>}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-slate-700 font-medium">{a.nombre || '—'}</td>
+                  <td className="px-4 py-3 text-slate-600">
+                    <span className="font-semibold text-slate-800">{a.tipoAnimal?.nombre}</span>
+                    <span className="block text-xs text-slate-400">{a.raza}</span>
+                  </td>
                   <td className="px-4 py-3 text-slate-600">{a.genero}</td>
                   <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{calcEdad(a.fechaNacimiento)}</td>
-                  <td className="px-4 py-3 text-slate-600">{a.peso}</td>
                   <td className="px-4 py-3">
-                    <span className="inline-block bg-slate-100 text-slate-700 text-xs font-semibold px-2 py-0.5 rounded">
-                      {a.corral}
+                    <span className="inline-block bg-slate-100 text-slate-700 text-xs font-semibold px-2.5 py-1 rounded-lg">
+                      {a.corral?.nombre || 'Sin corral'}
                     </span>
                   </td>
-                  <td className="px-4 py-3"><Badge estado={a.estado} /></td>
+                  <td className="px-4 py-3"><Badge estado={a.estado.toLowerCase()} /></td>
+                  <td className="px-4 py-3 text-right space-x-1 whitespace-nowrap">
+                    <button
+                      onClick={() => { setAnimalSeleccionado(a); setModalOpen(true); }}
+                      className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
+                      title="Editar animal"
+                    >
+                      <Edit3 size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleEliminar(a.idAnimal, a.areteBandera)}
+                      className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                      title="Eliminar animal"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -190,138 +281,16 @@ export default function GanadoView({ showToast }) {
         </div>
       </div>
 
-      {/* ── Modal: Registrar Animal ──────────────────────── */}
-      <Modal open={modalOpen} onClose={() => { setModalOpen(false); setFormError(''); }} title="Registrar Nuevo Animal">
-        <form onSubmit={handleRegistrar} className="space-y-4">
-          {formError && (
-            <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{formError}</p>
-          )}
-
-          <div className="grid grid-cols-2 gap-4">
-            {/* Arete */}
-            <div className="col-span-2 sm:col-span-1">
-              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1">
-                N° de Arete <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={form.arete}
-                onChange={e => setForm(f => ({ ...f, arete: e.target.value }))}
-                placeholder="Ej: PP-016"
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-            </div>
-
-            {/* Nombre */}
-            <div className="col-span-2 sm:col-span-1">
-              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1">Nombre (opcional)</label>
-              <input
-                type="text"
-                value={form.nombre}
-                onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))}
-                placeholder="Ej: El Bravo"
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-            </div>
-
-            {/* Raza */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1">Raza</label>
-              <select
-                value={form.raza}
-                onChange={e => setForm(f => ({ ...f, raza: e.target.value }))}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              >
-                {RAZAS.map(r => <option key={r}>{r}</option>)}
-              </select>
-            </div>
-
-            {/* Género */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1">Género</label>
-              <div className="grid grid-cols-2 gap-2">
-                {GENEROS.map(g => (
-                  <button
-                    key={g} type="button"
-                    onClick={() => setForm(f => ({ ...f, genero: g }))}
-                    className={`py-2 text-sm rounded-lg border font-medium transition-all ${
-                      form.genero === g
-                        ? 'bg-emerald-600 border-emerald-600 text-white'
-                        : 'border-slate-200 text-slate-600 hover:border-emerald-400'
-                    }`}
-                  >
-                    {g}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Fecha nacimiento */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1">
-                Fecha de Nacimiento <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                value={form.fechaNacimiento}
-                onChange={e => setForm(f => ({ ...f, fechaNacimiento: e.target.value }))}
-                max={new Date().toISOString().split('T')[0]}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-            </div>
-
-            {/* Peso */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1">Peso inicial (kg)</label>
-              <input
-                type="number"
-                min="0"
-                value={form.peso}
-                onChange={e => setForm(f => ({ ...f, peso: e.target.value }))}
-                placeholder="Ej: 320"
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-            </div>
-
-            {/* Corral */}
-            <div className="col-span-2">
-              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1">Corral asignado</label>
-              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                {corrales.map(c => (
-                  <button
-                    key={c} type="button"
-                    onClick={() => setForm(f => ({ ...f, corral: c }))}
-                    className={`py-2 text-sm rounded-lg border font-semibold transition-all ${
-                      form.corral === c
-                        ? 'bg-emerald-600 border-emerald-600 text-white'
-                        : 'border-slate-200 text-slate-600 hover:border-emerald-400'
-                    }`}
-                  >
-                    {c}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Botones */}
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={() => { setModalOpen(false); setFormError(''); }}
-              className="flex-1 py-2.5 border border-slate-200 text-slate-600 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg transition-colors"
-            >
-              Registrar Animal
-            </button>
-          </div>
-        </form>
-      </Modal>
+      {/* ── Modal Modular: Registrar / Editar Animal ─────── */}
+      {modalOpen && (
+        <AnimalForm 
+          animalAEditar={animalSeleccionado}
+          corrales={corrales}
+          tiposAnimal={tiposAnimal}
+          onSubmit={handleGuardar}
+          onCancel={() => { setModalOpen(false); setAnimalSeleccionado(null); }}
+        />
+      )}
     </div>
   );
 }

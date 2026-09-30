@@ -18,25 +18,29 @@ import VacunacionView from './views/VacunacionView';
 import InventarioView from './views/InventarioView';
 import ClientesView   from './views/ClientesView';
 import CalendarioView from './views/CalendarioView';
+import EmpleadosView  from './views/EmpleadosView';
+import ConfiguracionView from './views/ConfiguracionView'; // <-- 1. Importar la vista
 
 // ─── Mapa de vistas ───────────────────────────────────────────
 const VIEWS = {
-  dashboard:  DashboardView,
-  ganado:     GanadoView,
-  ventas:     VentasView,
-  vacunacion: VacunacionView,
-  inventario: InventarioView,
-  clientes:   ClientesView,
-  calendario: CalendarioView,
+  dashboard:     DashboardView,
+  ganado:        GanadoView,
+  ventas:        VentasView,
+  vacunacion:    VacunacionView,
+  inventario:    InventarioView,
+  clientes:      ClientesView,
+  calendario:    CalendarioView,
+  empleados:     EmpleadosView,
+  configuracion: ConfiguracionView, // <-- 2. Registrar la vista en el mapa
 };
 
 export default function App() {
   // ── Estado global ──────────────────────────────────────────
-  const [isLoggedIn,      setIsLoggedIn]      = useState(false);
-  const [user,            setUser]            = useState(null);           // { nombre, rol }
-  const [activeView,      setActiveView]      = useState('dashboard');
-  const [sidebarCollapsed,setSidebarCollapsed]= useState(false);
-  const [toast,           setToast]           = useState(null);           // { message, type }
+  const [isLoggedIn,       setIsLoggedIn]       = useState(false);
+  const [user,             setUser]             = useState(null);           // { nombre, rol }
+  const [activeView,       setActiveView]       = useState('dashboard');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [toast,            setToast]            = useState(null);           // { message, type }
 
   // ── Toast helper ───────────────────────────────────────────
   const showToast = useCallback((payload) => setToast(payload), []);
@@ -84,7 +88,7 @@ export default function App() {
           <ActiveView
             setActiveView={setActiveView}
             showToast={showToast}
-            userRole={user?.rol}
+            usuario={user} // Pasamos el objeto completo { nombre, rol } para validar permisos de admin
           />
         </main>
       </div>

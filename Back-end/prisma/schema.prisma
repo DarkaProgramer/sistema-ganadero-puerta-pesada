@@ -1,0 +1,238 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ConfiguracionRancho {
+  idConfiguracion Int    @id @default(autoincrement())
+  nombreRancho    String @db.VarChar(100)
+  logoUrl         String @db.VarChar(255) // Ruta local ej: "/assets/rancho-logo.png"
+  moneda          String @default("MXN") @db.VarChar(5)
+  unidadPeso      String @default("kg") @db.VarChar(10)
+
+  @@map("configuracion_rancho")
+}
+
+model Empleado {
+  idEmpleado       Int      @id @default(autoincrement())
+  nombreCompleto   String   @db.VarChar(150)
+  correo           String   @unique @db.VarChar(100)
+  contrasenaHash   String   @db.VarChar(255)
+  rol              String   @db.VarChar(20) // 'Empleado', 'Administrador'
+  puesto            String?  @db.VarChar(50) // 'Capataz', 'Veterinario', 'Vaquero', etc.
+  telefono         String?  @db.VarChar(15)
+
+  eventos          Evento[]
+  controlesSanitarios ControlSanitario[]
+  movimientosInventario MovimientoInventario[]
+  reportes         Reporte[]
+  movimientosFinancieros MovimientoFinanciero[]
+
+  @@map("empleados")
+}
+
+model TipoAnimal {
+  idTipoAnimal Int      @id @default(autoincrement())
+  nombre       String   @db.VarChar(30) // 'Bovino', 'Equino'
+  
+  animales     Animal[]
+
+  @@map("tipo_animal")
+}
+
+
+model Corral {
+  idCorral         Int      @id @default(autoincrement())
+  nombre           String   @db.VarChar(50)
+  capacidadMaxima  Int
+
+  animales         Animal[]
+  controlesSanitarios ControlSanitario[]
+
+  @@map("corrales")
+}
+
+model Animal {
+  idAnimal         Int       @id @default(autoincrement())
+  idCorral         Int
+  idTipoAnimal     Int
+  areteBandera     String    @db.VarChar(20) @map("arete_bandera")
+  areteBoton       String?   @db.VarChar(20) @map("arete_boton")
+  nombre           String?   @db.VarChar(50)
+  genero           String    @db.VarChar(10) // 'Macho', 'Hembra'
+  raza             String    @db.VarChar(50)
+  origen           String    @db.VarChar(10) // 'Nacimiento', 'Compra'
+  fechaNacimiento  DateTime? @db.Date
+  fechaIngreso     DateTime  @db.Date
+  estado           String    @db.VarChar(20) // 'Vivo', 'Vendido', 'Muerto'
+
+  corral           Corral     @relation(fields: [idCorral], references: [idCorral])
+  tipoAnimal       TipoAnimal @relation(fields: [idTipoAnimal], references: [idTipoAnimal])
+  historicos       HistoricoAnimal[]
+  tratamientos     TratamientoAnimal[]
+  ventasAnimales   VentaAnimal[]
+
+  @@map("animales")
+}
+
+model HistoricoAnimal {
+  idHistorico      Int      @id @default(autoincrement())
+  idAnimal         Int
+  fecha            DateTime @db.Date
+  peso             Decimal  @db.Decimal(6, 2)
+  etapa            String   @db.VarChar(20)
+
+  animal           Animal   @relation(fields: [idAnimal], references: [idAnimal], onDelete: Cascade)
+
+  @@map("historico_animal")
+}
+
+model Evento {
+  idEvento         Int      @id @default(autoincrement())
+  idEmpleado       Int
+  tipo             String   @db.VarChar(30)
+  fecha            DateTime @db.Date
+  hora             DateTime? @db.Time()
+  descripcion      String   @db.Text
+  estado           String   @db.VarChar(20)
+
+  empleado         Empleado @relation(fields: [idEmpleado], references: [idEmpleado])
+
+  @@map("eventos")
+}
+
+model ControlSanitario {
+  idControl        Int      @id @default(autoincrement())
+  idCorral         Int?
+  tipo             String   @db.VarChar(20)
+  fecha            DateTime @db.Date
+  producto         String   @db.VarChar(100)
+  responsable      Int
+  observaciones    String?  @db.Text
+  estado           String   @db.VarChar(20)
+
+  corral           Corral?  @relation(fields: [idCorral], references: [idCorral])
+  empleado         Empleado @relation(fields: [responsable], references: [idEmpleado])
+  tratamientos     TratamientoAnimal[]
+
+  @@map("control_sanitario")
+}
+
+model TratamientoAnimal {
+  idTratamiento    Int       @id @default(autoincrement())
+  idControl        Int
+  idAnimal         Int
+  estado           String    @db.VarChar(20)
+  fechaAplicacion  DateTime? @db.Date
+
+  controlSanitario ControlSanitario @relation(fields: [idControl], references: [idControl], onDelete: Cascade)
+  animal           Animal           @relation(fields: [idAnimal], references: [idAnimal], onDelete: Cascade)
+
+  @@map("tratamiento_animal")
+}
+
+model Cliente {
+  idClient         Int      @id @default(autoincrement()) @map("idCliente")
+  nomCliente       String   @db.VarChar(100)
+  telefono         String?  @db.VarChar(15)
+  correo           String?  @db.VarChar(100)
+
+  ventas           Venta[]
+
+  @@map("clientes")
+}
+
+model Venta {
+  idVenta          Int      @id @default(autoincrement())
+  idCliente        Int
+  fecha            DateTime @db.Date
+  total            Decimal  @db.Decimal(10, 2)
+  estado           String   @db.VarChar(10) // 'Pagado', 'Pendiente'
+
+  cliente          Cliente  @relation(fields: [idCliente], references: [idClient])
+  ventasAnimales   VentaAnimal[]
+
+  @@map("ventas")
+}
+
+model VentaAnimal {
+  idVentaAnimal    Int      @id @default(autoincrement())
+  idVenta          Int
+  idAnimal         Int
+  fechaVenta       DateTime @db.Date
+
+  venta            Venta    @relation(fields: [idVenta], references: [idVenta], onDelete: Cascade)
+  animal           Animal   @relation(fields: [idAnimal], references: [idAnimal])
+
+  @@map("venta_animal")
+}
+
+model Inventario {
+  idInventario     Int      @id @default(autoincrement())
+  nombre           String   @db.VarChar(100)
+  categoria        String   @db.VarChar(50)
+  cantidadActual   Int
+  unidad           String   @db.VarChar(20)
+  stockMinimo      Int
+
+  movimientos      MovimientoInventario[]
+
+  @@map("inventario")
+}
+
+model MovimientoInventario {
+  idMovimiento     Int      @id @default(autoincrement())
+  idInventario     Int
+  idEmpleado       Int
+  tipoMovimiento   String   @db.VarChar(10) // 'Entrada', 'Salida'
+  cantidad         Int
+  fecha            DateTime @db.Date
+
+  inventario       Inventario @relation(fields: [idInventario], references: [idInventario])
+  empleado         Empleado   @relation(fields: [idEmpleado], references: [idEmpleado])
+
+  @@map("movimiento_inventario")
+}
+
+model Equipo {
+  idEquipo         Int      @id @default(autoincrement())
+  nombre           String   @db.VarChar(100)
+  categoria        String   @db.VarChar(50)
+  estado           String   @db.VarChar(20)
+
+  @@map("equipos")
+}
+
+model Reporte {
+  idReporte           Int      @id @default(autoincrement())
+  idEmpleado          Int
+  categoriaReporte    String   @db.VarChar(15) // 'Inventario','Equipo','Animal','General'
+  idInventarioAfectado Int?
+  idEquipoAfectado    Int?
+  idAnimalAfectado    Int?
+  titulo              String   @db.VarChar(100)
+  descripcion         String   @db.Text
+  fecha               DateTime @default(now()) @db.Timestamp(6)
+
+  empleado            Empleado @relation(fields: [idEmpleado], references: [idEmpleado])
+
+  @@map("reportes")
+}
+
+model MovimientoFinanciero {
+  idMovimiento     Int      @id @default(autoincrement())
+  idEmpleado       Int
+  tipo             String   @db.VarChar(10) // 'Ingreso', 'Egreso'
+  categoria        String   @db.VarChar(50)
+  monto            Decimal  @db.Decimal(10, 2)
+  fecha            DateTime @db.Date
+  descripcion      String   @db.Text
+
+  empleado         Empleado @relation(fields: [idEmpleado], references: [idEmpleado])
+
+  @@map("movimiento_financiero")
+}
