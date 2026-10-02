@@ -1,20 +1,27 @@
 // Header.jsx — Barra superior con título, notificaciones y usuario
-
 import { Bell, Menu, ChevronDown } from 'lucide-react';
+import { useRancho } from '../../context/RanchoContext'; // Ajusta la ruta según la ubicación exacta de tu Header
 
 const VIEW_TITLES = {
-  dashboard:   'Tablero Principal',
-  ganado:      'Gestión de Ganado',
-  ventas:      'Registro de Ventas',
-  vacunacion:  'Control de Vacunación',
-  inventario:  'Inventario',
-  clientes:    'Clientes y Cuentas por Cobrar',
-  calendario:  'Calendario y Eventos',
+  dashboard:     'Tablero Principal',
+  ganado:        'Gestión de Ganado',
+  ventas:        'Registro de Ventas',
+  vacunacion:    'Control de Vacunación',
+  inventario:    'Inventario',
+  clientes:      'Clientes y Cuentas por Cobrar',
+  calendario:    'Calendario y Eventos',
+  configuracion: 'Configuración del Rancho',
+  empleados:     'Gestión de Empleados'
 };
 
 export default function Header({ activeView, userName, userRole, onToggleSidebar, alertCount = 3 }) {
-  const roleLabel = userRole === 'admin' ? 'Administrador' : 'Empleado';
-  const initials  = userName
+  const { ranchoConfig } = useRancho();
+
+  // Comprobación flexible para admin o administrador sin importar mayúsculas
+  const rolNormalizado = userRole?.toLowerCase() || '';
+  const roleLabel = (rolNormalizado === 'administrador' || rolNormalizado === 'admin') ? 'Administrador' : 'Empleado';
+  
+  const initials = userName
     ? userName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
     : 'US';
 
@@ -33,7 +40,7 @@ export default function Header({ activeView, userName, userRole, onToggleSidebar
             {VIEW_TITLES[activeView] ?? 'Puerta Pesada'}
           </h1>
           <p className="text-xs text-slate-400 leading-tight hidden sm:block">
-            Rancho Puerta Pesada — Sistema de Gestión
+            {ranchoConfig.nombreRancho} — Sistema de Gestión
           </p>
         </div>
       </div>

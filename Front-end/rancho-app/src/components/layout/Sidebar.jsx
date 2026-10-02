@@ -1,10 +1,11 @@
-// Sidebar.jsx — Menú lateral retráctil
-
+// Sidebar.jsx — Menú lateral retráctil conectado al contexto global
 import {
   LayoutDashboard, Beef, TrendingUp, Syringe,
   Package, Users, CalendarDays, ChevronLeft,
   ChevronRight, Settings, LogOut,
 } from 'lucide-react';
+import { useState } from 'react';
+import { useRancho } from '../../context/RanchoContext'; // Ajusta la ruta si es necesario según tu estructura de carpetas
 
 const NAV_ITEMS = [
   { id: 'dashboard',   label: 'Inicio',       icon: LayoutDashboard },
@@ -18,6 +19,9 @@ const NAV_ITEMS = [
 ];
 
 export default function Sidebar({ activeView, setActiveView, collapsed, setCollapsed, onLogout }) {
+  const { ranchoConfig } = useRancho();
+  const [imgError, setImgError] = useState(false);
+
   return (
     <aside
       className={`
@@ -27,14 +31,25 @@ export default function Sidebar({ activeView, setActiveView, collapsed, setColla
         min-h-screen relative
       `}
     >
-      {/* ── Logo ──────────────────────────────────────────── */}
+      {/* ── Logo e Identidad Dinámica del Rancho ───────────────────── */}
       <div className={`flex items-center gap-3 px-4 py-5 border-b border-slate-700/60 ${collapsed ? 'justify-center' : ''}`}>
-        <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-emerald-600 flex items-center justify-center font-bold text-white text-sm select-none">
-          PP
+        <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-emerald-600/20 border border-emerald-500/30 overflow-hidden flex items-center justify-center font-bold text-white text-sm select-none shadow-md">
+          {!imgError ? (
+            <img 
+              src={ranchoConfig.logoUrl} 
+              alt="Logo Rancho" 
+              className="w-full h-full object-cover"
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <span>PP</span>
+          )}
         </div>
         {!collapsed && (
           <div className="overflow-hidden">
-            <p className="font-bold text-white text-sm leading-tight">Puerta Pesada</p>
+            <p className="font-bold text-white text-sm leading-tight truncate">
+              {ranchoConfig.nombreRancho}
+            </p>
             <p className="text-xs text-slate-400 leading-tight">Gestión Ganadera</p>
           </div>
         )}

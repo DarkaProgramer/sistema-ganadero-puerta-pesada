@@ -14,33 +14,35 @@ export default function ConfiguracionView({ usuario, showToast }) {
   const [modalCorralOpen, setModalCorralOpen] = useState(false);
   const [modalTipoOpen, setModalTipoOpen] = useState(false);
 
-  // Cargar datos del backend sin advertencias de linter
+  // Cargar datos del backend optimizado sin llamadas directas síncronas al setState en el efecto
   useEffect(() => {
     let isMounted = true;
 
-    const cargarDatos = async () => {
+    async function cargarDatos() {
       try {
-        const [resConf, resTipos] = await Promise.all([
+        const [resConf, resCorrales, resTipos] = await Promise.all([
           fetch('http://localhost:4000/api/configuracion'),
-          fetch('http://localhost:4000/api/animales/catalogos')
+          fetch('http://localhost:4000/api/configuracion/corrales'),
+          fetch('http://localhost:4000/api/configuracion/tipos-animal')
         ]);
 
         const dataConf = await resConf.json();
-        const dataCatalogos = await resTipos.json();
+        const dataCorrales = await resCorrales.json();
+        const dataTipos = await resTipos.json();
 
         if (isMounted) {
           if (resConf.ok) setConfig(dataConf);
-          if (resTipos.ok) {
-            setCorrales(dataCatalogos.corrales || []);
-            setTiposAnimal(dataCatalogos.tiposAnimal || []);
-          }
+          if (resCorrales.ok) setCorrales(dataCorrales);
+          if (resTipos.ok) setTiposAnimal(dataTipos);
         }
       } catch (err) {
         console.error('Error al cargar configuración:', err);
       } finally {
-        if (isMounted) setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
-    };
+    }
 
     cargarDatos();
 
@@ -49,26 +51,19 @@ export default function ConfiguracionView({ usuario, showToast }) {
     };
   }, []);
 
-  const recargarCatalogos = async () => {
+  const cargarDatosRefresco = async () => {
     try {
-      const res = await fetch('http://localhost:4000/api/animales/catalogos');
-      const data = await res.json();
-      if (res.ok) {
-        setCorrales(data.corrales || []);
-        setTiposAnimal(data.tiposAnimal || []);
-      }
-    } catch (err) {
-      console.error('Error al recargar:', err);
-    }
-  };
+      const [resConf, resCorrales, resTipos] = await Promise.all([
+        fetch('http://localhost:4000/api/configuracion'),
+        fetch('http://localhost:4000/api/configuracion/corrales'),
+        fetch('http://localhost:4000/api/configuracion/tipos-animal')
+      ]);
 
-  const recargarConfig = async () => {
-    try {
-      const res = await fetch('http://localhost:4000/api/configuracion');
-      const data = await res.json();
-      if (res.ok) setConfig(data);
+      if (resConf.ok) setConfig(await resConf.json());
+      if (resCorrales.ok) setCorrales(await resCorrales.json());
+      if (resTipos.ok) setTiposAnimal(await resTipos.json());
     } catch (err) {
-      console.error('Error al recargar config:', err);
+      console.error('Error al refrescar datos:', err);
     }
   };
 
@@ -96,7 +91,7 @@ export default function ConfiguracionView({ usuario, showToast }) {
       });
       if (res.ok) {
         setModalGeneralOpen(false);
-        recargarConfig();
+        await cargarDatosRefresco();
         showToast({ message: 'Configuración actualizada con éxito.', type: 'success' });
       } else {
         alert('Error al guardar.');
@@ -108,14 +103,14 @@ export default function ConfiguracionView({ usuario, showToast }) {
 
   const handleCrearCorral = async (formData) => {
     try {
-      const res = await fetch('http://localhost:4000/api/corrales', {
+      const res = await fetch('http://localhost:4000/api/configuracion/corrales', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...formData, capacidadMaxima: Number(formData.capacidadMaxima) })
       });
       if (res.ok) {
         setModalCorralOpen(false);
-        recargarCatalogos();
+        await cargarDatosRefresco();
         showToast({ message: 'Corral registrado con éxito.', type: 'success' });
       } else {
         alert('Error al crear corral.');
@@ -127,14 +122,14 @@ export default function ConfiguracionView({ usuario, showToast }) {
 
   const handleCrearTipo = async (formData) => {
     try {
-      const res = await fetch('http://localhost:4000/api/tipos-animal', {
+      const res = await fetch('http://localhost:4000/api/configuracion/tipos-animal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
       if (res.ok) {
         setModalTipoOpen(false);
-        recargarCatalogos();
+        await cargarDatosRefresco();
         showToast({ message: 'Tipo de ganado registrado con éxito.', type: 'success' });
       } else {
         alert('Error al crear tipo.');
@@ -165,7 +160,7 @@ export default function ConfiguracionView({ usuario, showToast }) {
         <div className="flex items-center gap-5">
           <div className="w-20 h-20 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-inner">
             <img 
-              src={config?.logoUrl || '/assets/logo.png'} 
+              src={config?.logoUrl || '/logo-Rancho.png'} 
               alt="Logo Rancho" 
               className="w-full h-full object-cover"
               onError={(e) => { e.target.src = 'https://placehold.co/80?text=PP'; }}

@@ -1,5 +1,7 @@
 import prisma from '../config/db.js';
 
+// ==================== CONFIGURACIÓN GENERAL ====================
+
 // Obtener la configuración del rancho (Si no existe, crea una por defecto)
 export const obtenerConfiguracion = async (req, res) => {
   try {
@@ -8,7 +10,7 @@ export const obtenerConfiguracion = async (req, res) => {
       config = await prisma.configuracionRancho.create({
         data: {
           nombreRancho: 'Rancho Puerta Pesada',
-          logoUrl: '/assets/logo.png',
+          logoUrl: '/logo-Rancho.png',
           moneda: 'MXN',
           unidadPeso: 'kg'
         }
@@ -20,7 +22,7 @@ export const obtenerConfiguracion = async (req, res) => {
   }
 };
 
-// Actualizar la configuración del rancho (Solo administradores)
+// Actualizar la configuración del rancho
 export const actualizarConfiguracion = async (req, res) => {
   try {
     const { nombreRancho, logoUrl, moneda, unidadPeso } = req.body;
@@ -44,8 +46,20 @@ export const actualizarConfiguracion = async (req, res) => {
   }
 };
 
+
 // ==================== CORRALES ====================
 
+// Obtener lista de corrales
+export const obtenerCorrales = async (req, res) => {
+  try {
+    const corrales = await prisma.corral.findMany();
+    res.json(corrales);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener los corrales', details: error.message });
+  }
+};
+
+// Crear un corral
 export const crearCorral = async (req, res) => {
   try {
     const { nombre, capacidadMaxima } = req.body;
@@ -58,6 +72,7 @@ export const crearCorral = async (req, res) => {
   }
 };
 
+// Actualizar un corral
 export const actualizarCorral = async (req, res) => {
   try {
     const { id } = req.params;
@@ -72,19 +87,31 @@ export const actualizarCorral = async (req, res) => {
   }
 };
 
+// Eliminar un corral
 export const eliminarCorral = async (req, res) => {
   try {
     const { id } = req.params;
     await prisma.corral.delete({ where: { idCorral: Number(id) } });
     res.json({ message: 'Corral eliminado correctamente' });
   } catch (error) {
-    res.status(500).json({ error: 'Error al eliminar el corral (puede que tenga animales asignados)', details: error.message });
+    res.status(500).json({ error: 'Error al eliminar el corral', details: error.message });
   }
 };
 
 
 // ==================== TIPOS DE ANIMAL ====================
 
+// Obtener lista de tipos de animal
+export const obtenerTiposAnimal = async (req, res) => {
+  try {
+    const tipos = await prisma.tipoAnimal.findMany();
+    res.json(tipos);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener los tipos de animal', details: error.message });
+  }
+};
+
+// Crear un tipo de animal
 export const crearTipoAnimal = async (req, res) => {
   try {
     const { nombre } = req.body;
@@ -95,6 +122,7 @@ export const crearTipoAnimal = async (req, res) => {
   }
 };
 
+// Actualizar un tipo de animal
 export const actualizarTipoAnimal = async (req, res) => {
   try {
     const { id } = req.params;
@@ -109,12 +137,13 @@ export const actualizarTipoAnimal = async (req, res) => {
   }
 };
 
+// Eliminar un tipo de animal
 export const eliminarTipoAnimal = async (req, res) => {
   try {
     const { id } = req.params;
     await prisma.tipoAnimal.delete({ where: { idTipoAnimal: Number(id) } });
     res.json({ message: 'Tipo de animal eliminado correctamente' });
   } catch (error) {
-    res.status(500).json({ error: 'Error al eliminar el tipo (puede que esté en uso por algún animal)', details: error.message });
+    res.status(500).json({ error: 'Error al eliminar el tipo de animal', details: error.message });
   }
 };

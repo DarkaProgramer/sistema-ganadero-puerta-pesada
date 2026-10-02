@@ -1,13 +1,15 @@
 // LoginView.jsx — Pantalla de acceso corporativa conectada al Backend
-
 import { useState } from 'react';
 import { Eye, EyeOff, ShieldCheck, AlertCircle } from 'lucide-react';
+import { useRancho } from '../context/RanchoContext';
 
 export default function LoginView({ onLogin }) {
+  const { ranchoConfig } = useRancho();
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPass, setShowPass] = useState(false);
   const [error, setError]     = useState('');
   const [loading, setLoading] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,7 +23,6 @@ export default function LoginView({ onLogin }) {
     setLoading(true);
 
     try {
-      // Petición real al backend de Node.js en el puerto 4000
       const respuesta = await fetch('http://localhost:4000/api/empleados/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -34,7 +35,6 @@ export default function LoginView({ onLogin }) {
       const datos = await respuesta.json();
 
       if (respuesta.ok) {
-        // Pasamos los datos reales del empleado obtenidos del backend
         onLogin({ 
           nombre: datos.empleado.nombreCompleto, 
           rol: datos.empleado.rol.toLowerCase() 
@@ -52,18 +52,27 @@ export default function LoginView({ onLogin }) {
 
   return (
     <div className="min-h-screen bg-slate-950 flex">
-      {/* ── Panel izquierdo (branding limpio y profesional) ─────────────────────── */}
+      {/* ── Panel izquierdo (branding dinámico con logo mucho más grande y elegante) ─────────────────────── */}
       <div className="hidden lg:flex flex-col justify-between w-1/2 bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950 p-16 relative overflow-hidden border-r border-slate-800/60">
         <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
         
-        {/* Logo superior */}
-        <div className="flex items-center gap-3 relative z-10">
-          <div className="w-11 h-11 rounded-2xl bg-emerald-600 flex items-center justify-center font-bold text-white shadow-lg shadow-emerald-900/30">
-            PP
+        {/* Logo superior con tamaño generoso (w-20 h-20) */}
+        <div className="flex items-center gap-5 relative z-10">
+          <div className="w-45 h-35 rounded-3xl bg-emerald-600/20 border border-emerald-500/40 overflow-hidden flex items-center justify-center shadow-2xl shadow-emerald-950/60 backdrop-blur-md">
+            {!imgError ? (
+              <img 
+                src={ranchoConfig.logoUrl} 
+                alt="Logo Rancho" 
+                className="w-full h-full object-cover"
+                onError={() => setImgError(true)}
+              />
+            ) : (
+              <span className="font-bold text-white text-xl">PP</span>
+            )}
           </div>
           <div>
-            <p className="font-bold text-white text-base tracking-wide">Puerta Pesada</p>
-            <p className="text-emerald-400 text-xs font-medium">Plataforma Integral Ganadera</p>
+            <p className="font-bold text-white text-4xl tracking-wide">{ranchoConfig.nombreRancho}</p>
+            <p className="text-emerald-400 text-sm font-medium tracking-wide">Plataforma Integral Ganadera</p>
           </div>
         </div>
 
@@ -80,22 +89,28 @@ export default function LoginView({ onLogin }) {
           </p>
         </div>
 
-        {/* Footer discreto */}
         <div className="relative z-10 text-slate-500 text-xs">
           Sistema Autorizado — Módulo Operativo 2026
         </div>
       </div>
 
-      {/* ── Panel derecho (formulario limpio) ─────────────────────── */}
+      {/* ── Panel derecho (formulario) ─────────────────────── */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 bg-slate-50">
         <div className="w-full max-w-md bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8 sm:p-10">
           
-          {/* Logo móvil */}
-          <div className="flex items-center gap-3 mb-8 lg:hidden">
-            <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center font-bold text-white">PP</div>
+          {/* Logo móvil adaptado */}
+          <div className="flex items-center gap-3.5 mb-8 lg:hidden">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-600/20 border border-emerald-500/30 overflow-hidden flex items-center justify-center shadow-md">
+              <img 
+                src={ranchoConfig.logoUrl} 
+                alt="Logo" 
+                className="w-full h-full object-cover" 
+                onError={(e) => { e.target.src = 'https://placehold.co/60?text=PP'; }} 
+              />
+            </div>
             <div>
-              <p className="font-bold text-slate-800 text-base">Puerta Pesada</p>
-              <p className="text-emerald-600 text-xs">Sistema de Gestión</p>
+              <p className="font-bold text-slate-800 text-base">{ranchoConfig.nombreRancho}</p>
+              <p className="text-emerald-600 text-xs font-medium">Sistema de Gestión</p>
             </div>
           </div>
 
@@ -118,6 +133,7 @@ export default function LoginView({ onLogin }) {
               </label>
               <input
                 type="email"
+                required
                 value={form.email}
                 onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                 placeholder="nombre@puertapesada.mx"
@@ -132,6 +148,7 @@ export default function LoginView({ onLogin }) {
               <div className="relative">
                 <input
                   type={showPass ? 'text' : 'password'}
+                  required
                   value={form.password}
                   onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                   placeholder="••••••••"
@@ -165,7 +182,7 @@ export default function LoginView({ onLogin }) {
         </div>
 
         <p className="mt-8 text-xs text-slate-400 font-medium">
-          © 2026 Rancho Puerta Pesada — Proyecto Integradora III
+          © 2026 {ranchoConfig.nombreRancho} — Proyecto Integradora III
         </p>
       </div>
     </div>

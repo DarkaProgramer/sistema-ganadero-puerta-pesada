@@ -1,10 +1,10 @@
-// src/views/forms/ConfiguracionForm.jsx — Formularios modulares sin efectos secundarios
+// src/views/forms/ConfiguracionForm.jsx — Formularios modulares con guías de llenado
 import { useState } from 'react';
 
 export function GeneralConfigForm({ configActual, onSubmit, onCancel }) {
   const [form, setForm] = useState({
     nombreRancho: configActual?.nombreRancho || '',
-    logoUrl: configActual?.logoUrl || '/assets/logo.png',
+    logoUrl: configActual?.logoUrl || '/logo-Rancho.png',
     moneda: configActual?.moneda || 'MXN',
     unidadPeso: configActual?.unidadPeso || 'kg'
   });
@@ -27,19 +27,23 @@ export function GeneralConfigForm({ configActual, onSubmit, onCancel }) {
               required
               value={form.nombreRancho}
               onChange={e => setForm({ ...form, nombreRancho: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              placeholder="Ej. Rancho Puerta Pesada"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm placeholder:text-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             />
+            <p className="text-[11px] text-slate-400 mt-1">Nombre oficial que aparecerá en el sistema y reportes.</p>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">Ruta Local del Logo</label>
+            <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">Ruta o URL del Logo</label>
             <input
               type="text"
               required
               value={form.logoUrl}
               onChange={e => setForm({ ...form, logoUrl: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              placeholder="Ej. /logo-Rancho.png o URL externa"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm placeholder:text-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             />
+            <p className="text-[11px] text-slate-400 mt-1">Ubicación local o enlace web de la imagen del logotipo.</p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -48,10 +52,10 @@ export function GeneralConfigForm({ configActual, onSubmit, onCancel }) {
               <select
                 value={form.moneda}
                 onChange={e => setForm({ ...form, moneda: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white text-slate-700"
               >
-                <option value="MXN">MXN</option>
-                <option value="USD">USD</option>
+                <option value="MXN">MXN (Peso Mexicano)</option>
+                <option value="USD">USD (Dólar)</option>
               </select>
             </div>
             <div>
@@ -59,7 +63,7 @@ export function GeneralConfigForm({ configActual, onSubmit, onCancel }) {
               <select
                 value={form.unidadPeso}
                 onChange={e => setForm({ ...form, unidadPeso: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white text-slate-700"
               >
                 <option value="kg">Kilogramos (kg)</option>
                 <option value="lb">Libras (lb)</option>
@@ -89,7 +93,6 @@ export function GeneralConfigForm({ configActual, onSubmit, onCancel }) {
 }
 
 export function CorralForm({ corralAEditar, onSubmit, onCancel }) {
-  // Inicializamos el estado directamente con los datos de la prop si existen
   const [form, setForm] = useState({
     nombre: corralAEditar?.nombre || '',
     capacidadMaxima: corralAEditar?.capacidadMaxima || ''
@@ -114,7 +117,8 @@ export function CorralForm({ corralAEditar, onSubmit, onCancel }) {
               required
               value={form.nombre}
               onChange={e => setForm({ ...form, nombre: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              placeholder="Ej. Corral Principal o Sector A"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm placeholder:text-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             />
           </div>
           <div>
@@ -125,8 +129,10 @@ export function CorralForm({ corralAEditar, onSubmit, onCancel }) {
               min="1"
               value={form.capacidadMaxima}
               onChange={e => setForm({ ...form, capacidadMaxima: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              placeholder="Ej. 50"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm placeholder:text-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             />
+            <p className="text-[11px] text-slate-400 mt-1">Número máximo de cabezas permitidas en este espacio.</p>
           </div>
           <div className="flex justify-end gap-3 pt-4">
             <button
@@ -150,7 +156,6 @@ export function CorralForm({ corralAEditar, onSubmit, onCancel }) {
 }
 
 export function TipoAnimalForm({ tipoAEditar, onSubmit, onCancel }) {
-  // Inicializamos el estado directamente con la prop si existe
   const [nombre, setNombre] = useState(tipoAEditar?.nombre || '');
 
   const handleSubmit = (e) => {
@@ -172,8 +177,10 @@ export function TipoAnimalForm({ tipoAEditar, onSubmit, onCancel }) {
               required
               value={nombre}
               onChange={e => setNombre(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              placeholder="Ej. Bovino, Ovino o Porcino"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm placeholder:text-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             />
+            <p className="text-[11px] text-slate-400 mt-1">Clasificación o categoría general de los animales.</p>
           </div>
           <div className="flex justify-end gap-3 pt-4">
             <button
