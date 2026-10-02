@@ -13,8 +13,10 @@ export default function ConfiguracionView({ usuario, showToast }) {
   const [modalGeneralOpen, setModalGeneralOpen] = useState(false);
   const [modalCorralOpen, setModalCorralOpen] = useState(false);
   const [modalTipoOpen, setModalTipoOpen] = useState(false);
+  
+  // Estado para saber qué corral se está editando (si es null, es nuevo)
+  const [corralAEditar, setCorralAEditar] = useState(null);
 
-  // Cargar datos del backend optimizado sin llamadas directas síncronas al setState en el efecto
   useEffect(() => {
     let isMounted = true;
 
@@ -101,19 +103,27 @@ export default function ConfiguracionView({ usuario, showToast }) {
     }
   };
 
-  const handleCrearCorral = async (formData) => {
+  const handleGuardarCorral = async (formData) => {
     try {
-      const res = await fetch('http://localhost:4000/api/configuracion/corrales', {
-        method: 'POST',
+      const url = corralAEditar 
+        ? `http://localhost:4000/api/configuracion/corrales/${corralAEditar.idCorral}`
+        : 'http://localhost:4000/api/configuracion/corrales';
+      
+      const method = corralAEditar ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...formData, capacidadMaxima: Number(formData.capacidadMaxima) })
       });
+
       if (res.ok) {
         setModalCorralOpen(false);
+        setCorralAEditar(null);
         await cargarDatosRefresco();
-        showToast({ message: 'Corral registrado con éxito.', type: 'success' });
+        showToast({ message: corralAEditar ? 'Corral actualizado con éxito.' : 'Corral registrado con éxito.', type: 'success' });
       } else {
-        alert('Error al crear corral.');
+        alert('Error al guardar el corral.');
       }
     } catch {
       alert('Error de red.');
@@ -193,20 +203,27 @@ export default function ConfiguracionView({ usuario, showToast }) {
                 <Building2 size={18} className="text-emerald-600" /> Corrales ({corrales.length})
               </h3>
               <button
-                onClick={() => setModalCorralOpen(true)}
-                className="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl transition"
+                onClick={() => { setCorralAEditar(null); setModalCorralOpen(true); }}
+                className="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl transition flex items-center gap-1 text-xs font-semibold px-3"
                 title="Añadir corral"
               >
-                <Plus size={16} />
+                <Plus size={16} /> Nuevo
               </button>
             </div>
             <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
               {corrales.map(c => (
                 <div key={c.idCorral} className="flex items-center justify-between p-3.5 bg-slate-50/70 rounded-2xl text-sm border border-slate-100">
-                  <span className="font-semibold text-slate-800">{c.nombre}</span>
-                  <span className="text-xs font-medium text-slate-500 bg-white px-2.5 py-1 rounded-lg border border-slate-200/60">
-                    Capacidad: {c.capacidadMaxima}
-                  </span>
+                  <div>
+                    <span className="font-semibold text-slate-800 block">{c.nombre}</span>
+                    <span className="text-xs text-slate-400">Capacidad máxima: <strong>{c.capacidadMaxima}</strong></span>
+                  </div>
+                  <button
+                    onClick={() => { setCorralAEditar(c); setModalCorralOpen(true); }}
+                    className="p-2 bg-white hover:bg-emerald-50 text-slate-600 hover:text-emerald-600 rounded-xl border border-slate-200/60 transition shadow-sm"
+                    title="Editar corral"
+                  >
+                    <Edit3 size={15} />
+                  </button>
                 </div>
               ))}
             </div>
@@ -222,10 +239,10 @@ export default function ConfiguracionView({ usuario, showToast }) {
               </h3>
               <button
                 onClick={() => setModalTipoOpen(true)}
-                className="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl transition"
+                className="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl transition flex items-center gap-1 text-xs font-semibold px-3"
                 title="Añadir tipo de ganado"
               >
-                <Plus size={16} />
+                <Plus size={16} /> Nuevo
               </button>
             </div>
             <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
@@ -253,8 +270,9 @@ export default function ConfiguracionView({ usuario, showToast }) {
 
       {modalCorralOpen && (
         <CorralForm
-          onSubmit={handleCrearCorral}
-          onCancel={() => setModalCorralOpen(false)}
+          corralAEditar={corralAEditar}
+          onSubmit={handleGuardarCorral}
+          onCancel={() => { setModalCorralOpen(false); setCorralAEditar(null); }}
         />
       )}
 

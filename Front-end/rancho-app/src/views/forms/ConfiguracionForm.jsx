@@ -1,4 +1,4 @@
-// src/views/forms/ConfiguracionForm.jsx — Formularios modulares con guías de llenado
+// src/views/forms/ConfiguracionForm.jsx — Formularios modulares con guías y selección estandarizada
 import { useState } from 'react';
 
 export function GeneralConfigForm({ configActual, onSubmit, onCancel }) {
@@ -156,7 +156,7 @@ export function CorralForm({ corralAEditar, onSubmit, onCancel }) {
 }
 
 export function TipoAnimalForm({ tipoAEditar, onSubmit, onCancel }) {
-  const [nombre, setNombre] = useState(tipoAEditar?.nombre || '');
+  const [nombre, setNombre] = useState(tipoAEditar?.nombre || 'Bovino');
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -171,16 +171,21 @@ export function TipoAnimalForm({ tipoAEditar, onSubmit, onCancel }) {
         </h3>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">Nombre</label>
-            <input
-              type="text"
+            <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">Seleccionar Tipo de Ganado</label>
+            <select
               required
               value={nombre}
               onChange={e => setNombre(e.target.value)}
-              placeholder="Ej. Bovino, Ovino o Porcino"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm placeholder:text-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-            />
-            <p className="text-[11px] text-slate-400 mt-1">Clasificación o categoría general de los animales.</p>
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white text-slate-700"
+            >
+              <option value="Bovino">Bovino (Res / Vacas / Toros)</option>
+              <option value="Ovino">Ovino (Borregos / Ovejas)</option>
+              <option value="Caprino">Caprino (Cabras / Chivos)</option>
+              <option value="Porcino">Porcino (Cerdos / Puercos)</option>
+              <option value="Equino">Equino (Caballos / Yeguas / Ponis)</option>
+              <option value="Aves">Aves (Gallinas /plumas)</option>
+            </select>
+            <p className="text-[11px] text-slate-400 mt-1">Selecciona la categoría oficial del catálogo pecuario.</p>
           </div>
           <div className="flex justify-end gap-3 pt-4">
             <button
