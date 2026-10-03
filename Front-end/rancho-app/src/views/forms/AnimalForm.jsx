@@ -1,56 +1,73 @@
-// src/views/forms/AnimalForm.jsx — Formulario modular para Crear y Editar Animales
+// src/views/forms/AnimalForm.jsx — Formulario modular con scroll interno y título estático natural
 import { useState } from 'react';
+import { NOMBRES_MACHOS, NOMBRES_HEMBRAS, ESTADOS, GENEROS } from '../../data/nombresGanado';
 
-// Listas de nombres preguardados para el rancho
-const NOMBRES_MACHOS = [
-  'Rayo', 'Trueno', 'Bravo', 'Sultán', 'Toro', 'Furia', 'Centauro', 'Milagro', 'Gitano', 'Zorro',
-  'Comanche', 'Pionero', 'Halcón', 'Vencedor', 'Indomable', 'Becerro', 'Corsario', 'Diamante', 'Faraón', 'Goliath',
-  'Hércules', 'Imperio', 'Júpiter', 'Monarca', 'Nerón', 'Olimpo', 'Príncipe', 'Rómulo', 'Titán', 'Vikingo',
-  'Zeus', 'Apolo', 'Brutus', 'Caesar', 'Dante', 'Eros', 'Fénix', 'Garfield', 'Hunter', 'Ares',
-  'Atlas', 'Baco', 'Benton', 'Cesar', 'Chester', 'Cobre', 'Cody', 'Colt', 'Cooper', 'Cuco',
-  'Dalton', 'Dexter', 'Diesel', 'Duque', 'Dusty', 'El Mío', 'Emir', 'Enzo', 'Fido', 'Fito',
-  'Flaco', 'Fogonero', 'Frijol', 'Fuego', 'Gato', 'Gaucho', 'Genz', 'Gino', 'Goyo', 'Gris',
-  'Gus', 'Hank', 'Harley', 'Huesos', 'Igor', 'Indio', 'Jack', 'Jagger', 'Jaz', 'Jerry',
-  'Jocker', 'Kaiser', 'Kiko', 'Kobe', 'Kodiak', 'Koko', 'Ladrón', 'León', 'Lobo', 'Loki',
-  'Lucas', 'Lucky', 'Mac', 'Machito', 'Mambo', 'Manchas', 'Mariscal', 'Mateo', 'Max', 'Milo'
-];
+const ORIGENES = ['Nacimiento', 'Compra'];
 
-const NOMBRES_HEMBRAS = [
-  'Luna', 'Estrella', 'Gitana', 'Mora', 'Paloma', 'Perla', 'Flor', 'Canela', 'Gema', 'Princesa',
-  'Lola', 'Margarita', 'Blanquita', 'Rosa', 'Negrita', 'Chiquita', 'Bonita', 'Esperanza', 'Lupe', 'Pinta',
-  'Manchitas', 'Reina', 'Duquesa', 'Baronesa', 'Cleo', 'Dafne', 'Fiona', 'Gringa', 'Hera', 'Iris',
-  'Julieta', 'Katrina', 'Lila', 'Milagros', 'Nena', 'Opal', 'Pandora', 'Quinta', 'Rafaela', 'Sasha',
-  'Tania', 'Úrsula', 'Venus', 'Wanda', 'Xena', 'Yara', 'Zimba', 'Alba', 'Bella', 'Carmela',
-  'Dalia', 'Esmeralda', 'Fresa', 'Galaxia', 'Herminia', 'Isabela', 'Jazmín', 'Kira', 'Luna', 'Malva',
-  'Nube', 'Olimpia', 'Pastora', 'Queca', 'Rocio', 'Sabrina', 'Teresa', 'Uva', 'Viole', 'Wendy',
-  'Ximena', 'Yadira', 'Zulema', 'Agatha', 'Bimba', 'Ceniza', 'Diva', 'Erika', 'Flora', 'Gaviota',
-  'Hilda', 'India', 'Joya', 'Katy', 'Linda', 'Mina', 'Nora', 'Oma', 'Pepa', 'Queena',
-  'Rina', 'Sultana', 'Tita', 'Ura', 'Vaca', 'Whitney', 'Xinia', 'Yola', 'Zoe', 'Azúcar'
-];
+export default function AnimalForm({ animalAEditar, corrales, tiposAnimal, animalesLista = [], onSubmit, onCancel }) {
+  
+  // Valores iniciales seguros
+  const tipoInicial = animalAEditar?.idTipoAnimal || tiposAnimal[0]?.idTipoAnimal || '';
+  const especieInicial = tiposAnimal.find(t => Number(t.idTipoAnimal) === Number(tipoInicial));
+  const razasIniciales = especieInicial?.razas || [];
+  const razaInicial = animalAEditar?.idRaza || razasIniciales[0]?.idRaza || '';
 
-const RAZAS = ['Brahman', 'Angus', 'Charolais', 'Simmental', 'Cebú', 'Criollo'];
-const ESTADOS = ['Vivo', 'Vendido', 'Muerto'];
-const GENEROS = ['Macho', 'Hembra'];
-
-export default function AnimalForm({ animalAEditar, corrales, tiposAnimal, onSubmit, onCancel }) {
   const [form, setForm] = useState({
     areteBandera: animalAEditar?.areteBandera || '',
     areteBoton: animalAEditar?.areteBoton || '',
     nombre: animalAEditar?.nombre || '',
-    tipoNombre: animalAEditar?.nombre ? 'manual' : 'aleatorio', // 'aleatorio' o 'manual'
-    raza: animalAEditar?.raza || RAZAS[0],
+    tipoNombre: animalAEditar?.nombre ? 'manual' : 'aleatorio',
     genero: animalAEditar?.genero || GENEROS[0],
-    fechaNacimiento: animalAEditar?.fechaNacimiento ? animalAEditar.fechaNacimiento.split('T')[0] : '',
-    fechaIngreso: animalAEditar?.fechaIngreso ? animalAEditar.fechaIngreso.split('T')[0] : new Date().toISOString().split('T')[0],
+    idTipoAnimal: tipoInicial,
+    idRaza: razaInicial,
+    detalleMestizo: animalAEditar?.detalleMestizo || '',
     idCorral: animalAEditar?.idCorral || corrales[0]?.idCorral || '',
-    idTipoAnimal: animalAEditar?.idTipoAnimal || tiposAnimal[0]?.idTipoAnimal || '',
     estado: animalAEditar?.estado || 'Vivo',
-    pesoInicial: ''
+    origen: animalAEditar?.origen || 'Nacimiento',
+    idPadre: animalAEditar?.idPadre || '',
+    idMadre: animalAEditar?.idMadre || '',
+    fechaNacimiento: animalAEditar?.fechaNacimiento ? animalAEditar.fechaNacimiento.split('T')[0] : '',
+    fechaIngreso: animalAEditar?.fechaIngreso ? animalAEditar.fechaIngreso.split('T')[0] : new Date().toISOString().split('T')[0]
   });
 
   const [error, setError] = useState('');
 
-  // Generar un nombre aleatorio basado en el género seleccionado
+  // Valores derivados directamente en cada render
+  const especieSeleccionada = tiposAnimal.find(t => Number(t.idTipoAnimal) === Number(form.idTipoAnimal));
+  const razasDisponibles = especieSeleccionada?.razas || [];
+  
+  const razaSeleccionada = razasDisponibles.find(r => Number(r.idRaza) === Number(form.idRaza));
+  const esMestizo = razaSeleccionada?.nombre?.toLowerCase().includes('mestizo');
+
+  // Filtrar posibles padres (machos) y madres (hembras) de la lista general del rancho
+  const posiblesPadres = animalesLista.filter(a => a.genero === 'Macho' && a.idAnimal !== animalAEditar?.idAnimal);
+  const posiblesMadres = animalesLista.filter(a => a.genero === 'Hembra' && a.idAnimal !== animalAEditar?.idAnimal);
+
+  const handleTipoAnimalChange = (e) => {
+    const nuevoTipoId = e.target.value;
+    const nuevaEspecie = tiposAnimal.find(t => Number(t.idTipoAnimal) === Number(nuevoTipoId));
+    const primeraRaza = nuevaEspecie?.razas?.[0]?.idRaza || '';
+
+    setForm(f => ({
+      ...f,
+      idTipoAnimal: nuevoTipoId,
+      idRaza: primeraRaza,
+      detalleMestizo: ''
+    }));
+  };
+
+  const handleRazaChange = (e) => {
+    const nuevaRazaId = e.target.value;
+    const razaObj = razasDisponibles.find(r => Number(r.idRaza) === Number(nuevaRazaId));
+    const esCruza = razaObj?.nombre?.toLowerCase().includes('mestizo');
+
+    setForm(f => ({
+      ...f,
+      idRaza: nuevaRazaId,
+      detalleMestizo: esCruza ? f.detalleMestizo : ''
+    }));
+  };
+
   const generarNombreAleatorio = (generoActual) => {
     const lista = generoActual === 'Macho' ? NOMBRES_MACHOS : NOMBRES_HEMBRAS;
     const aleatorio = lista[Math.floor(Math.random() * lista.length)];
@@ -82,16 +99,18 @@ export default function AnimalForm({ animalAEditar, corrales, tiposAnimal, onSub
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!form.areteBandera || !form.idCorral || !form.idTipoAnimal) {
-      setError('El número de arete, corral y tipo de animal son obligatorios.');
+    if (!form.areteBandera || !form.idCorral || !form.idTipoAnimal || !form.idRaza || !form.origen) {
+      setError('El arete, corral, tipo de animal, raza y origen son obligatorios.');
       return;
     }
     onSubmit(form);
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-8 border border-slate-100 my-8">
+    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      {/* Contenedor con altura máxima y scroll interno vertical */}
+      <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-8 border border-slate-100 max-h-[90vh] overflow-y-auto">
+        {/* Título normal integrado arriba sin ser sticky */}
         <h3 className="text-xl font-bold text-slate-800 mb-6">
           {animalAEditar ? 'Editar Información del Animal' : 'Registrar Nuevo Animal'}
         </h3>
@@ -127,7 +146,7 @@ export default function AnimalForm({ animalAEditar, corrales, tiposAnimal, onSub
             </div>
           </div>
 
-          {/* Selector de Género primero para condicionar los nombres aleatorios */}
+          {/* Selector de Género */}
           <div>
             <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1">Género</label>
             <div className="grid grid-cols-2 gap-2">
@@ -147,7 +166,70 @@ export default function AnimalForm({ animalAEditar, corrales, tiposAnimal, onSub
             </div>
           </div>
 
-          {/* Opción de Nombre: Aleatorio o Manual */}
+          {/* Selector de Origen */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1">Origen del Animal</label>
+            <div className="grid grid-cols-2 gap-2">
+              {ORIGENES.map(o => (
+                <button
+                  key={o} type="button"
+                  onClick={() => setForm(f => ({ ...f, origen: o, idPadre: o === 'Compra' ? '' : f.idPadre, idMadre: o === 'Compra' ? '' : f.idMadre }))}
+                  className={`py-2 text-sm rounded-xl border font-medium transition-all ${
+                    form.origen === o
+                      ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm'
+                      : 'border-slate-200 text-slate-600 hover:border-emerald-400 bg-white'
+                  }`}
+                >
+                  {o === 'Nacimiento' ? '🌱 Nacimiento en Rancho' : '🏷️ Compra Externa'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Genética condicional solo si es Nacimiento */}
+          {form.origen === 'Nacimiento' && (
+            <div className="p-4 bg-emerald-50/50 border border-emerald-200 rounded-2xl space-y-3">
+              <label className="block text-xs font-bold text-emerald-900 uppercase tracking-wide">
+                🧬 Línea Genética (Opcional - Si no hay registro, dejar en blanco)
+              </label>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">Padre (Semental)</label>
+                  <select
+                    value={form.idPadre}
+                    onChange={e => setForm(f => ({ ...f, idPadre: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-xl border border-emerald-200 text-xs bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  >
+                    <option value="">-- Desconocido / No registrado --</option>
+                    {posiblesPadres.map(p => (
+                      <option key={p.idAnimal} value={p.idAnimal}>
+                        {p.areteBandera} {p.nombre ? `(${p.nombre})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">Madre</label>
+                  <select
+                    value={form.idMadre}
+                    onChange={e => setForm(f => ({ ...f, idMadre: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-xl border border-emerald-200 text-xs bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  >
+                    <option value="">-- Desconocido / No registrado --</option>
+                    {posiblesMadres.map(m => (
+                      <option key={m.idAnimal} value={m.idAnimal}>
+                        {m.areteBandera} {m.nombre ? `(${m.nombre})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Opción de Nombre */}
           <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">Nombre del Animal</label>
@@ -159,7 +241,7 @@ export default function AnimalForm({ animalAEditar, corrales, tiposAnimal, onSub
                     form.tipoNombre === 'aleatorio' ? 'bg-emerald-600 text-white' : 'bg-white text-slate-600 border border-slate-200'
                   }`}
                 >
-                  🎲 Aleatorio (Pregenerado)
+                  🎲 Aleatorio
                 </button>
                 <button
                   type="button"
@@ -168,7 +250,7 @@ export default function AnimalForm({ animalAEditar, corrales, tiposAnimal, onSub
                     form.tipoNombre === 'manual' ? 'bg-emerald-600 text-white' : 'bg-white text-slate-600 border border-slate-200'
                   }`}
                 >
-                  ✏️ Escribir Manual
+                  ✏️️ Manual
                 </button>
               </div>
             </div>
@@ -200,12 +282,13 @@ export default function AnimalForm({ animalAEditar, corrales, tiposAnimal, onSub
             )}
           </div>
 
+          {/* Tipo de Animal y Corral */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1">Tipo de Animal</label>
               <select
                 value={form.idTipoAnimal}
-                onChange={e => setForm(f => ({ ...f, idTipoAnimal: e.target.value }))}
+                onChange={handleTipoAnimalChange}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white"
               >
                 {tiposAnimal.map(t => (
@@ -221,21 +304,24 @@ export default function AnimalForm({ animalAEditar, corrales, tiposAnimal, onSub
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white"
               >
                 {corrales.map(c => (
-                  <option key={c.idCorral} value={c.idCorral}>{c.nombre}</option>
+                  <option key={c.idCorral} value={c.idCorral}>{c.nombre} (Máx: {c.capacidadMaxima})</option>
                 ))}
               </select>
             </div>
           </div>
 
+          {/* Raza Dinámica y Estado */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1">Raza</label>
               <select
-                value={form.raza}
-                onChange={e => setForm(f => ({ ...f, raza: e.target.value }))}
+                value={form.idRaza}
+                onChange={handleRazaChange}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white"
               >
-                {RAZAS.map(r => <option key={r}>{r}</option>)}
+                {razasDisponibles.map(r => (
+                  <option key={r.idRaza} value={r.idRaza}>{r.nombre}</option>
+                ))}
               </select>
             </div>
             <div>
@@ -250,6 +336,24 @@ export default function AnimalForm({ animalAEditar, corrales, tiposAnimal, onSub
             </div>
           </div>
 
+          {/* Input condicional para especificar el Mestizo / Cruza */}
+          {esMestizo && (
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl">
+              <label className="block text-xs font-bold text-amber-800 uppercase tracking-wide mb-1">
+                Detalle de la Cruza (Mestizo) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                required={esMestizo}
+                value={form.detalleMestizo}
+                onChange={e => setForm(f => ({ ...f, detalleMestizo: e.target.value }))}
+                placeholder="Ej. Cruza de Angus con Hereford"
+                className="w-full px-3.5 py-2 rounded-xl border border-amber-300 text-sm bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              />
+            </div>
+          )}
+
+          {/* Fechas */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1">Fecha de Nacimiento</label>
@@ -273,7 +377,8 @@ export default function AnimalForm({ animalAEditar, corrales, tiposAnimal, onSub
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4">
+          {/* Botones de acción */}
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 mt-6">
             <button
               type="button"
               onClick={onCancel}

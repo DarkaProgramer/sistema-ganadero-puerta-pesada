@@ -9,10 +9,19 @@ import {
 
 const router = express.Router();
 
+// Ruta para obtener todos los animales registrados
 router.get('/', obtenerAnimales);
-router.get('/catalogos', obtenerCatalogosAnimales); // Para llenar corrales y tipos en el form
+
+// Ruta para obtener los corrales y tipos de animal con sus respectivas razas precargadas
+router.get('/catalogos', obtenerCatalogosAnimales);
+
+// Ruta para registrar un nuevo animal (con validación de capacidad de corral)
 router.post('/registro', registrarAnimal);
+
+// Ruta para actualizar los datos de un animal existente
 router.put('/:id', actualizarAnimal);
+
+// Ruta para eliminar un animal del sistema
 router.delete('/:id', eliminarAnimal);
 
 export default router;

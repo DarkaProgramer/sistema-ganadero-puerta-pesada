@@ -1,22 +1,31 @@
-// GanadoView.jsx — Gestión de ganado conectada al Backend y formulario modular
+// GanadoView.jsx — Gestión de ganado conectada al Backend, Ficha de Detalle y Báscula Masiva
 
 import { useState, useEffect } from 'react';
-import { Plus, Search, Filter, Beef, Trash2, Edit3, Tag } from 'lucide-react';
+import { Plus, Search, Filter, Beef, Trash2, Edit3, Tag, Scale, Eye, Building2 } from 'lucide-react';
 import Badge from '../components/ui/Badge';
 import AnimalForm from './forms/AnimalForm';
+import AnimalDetalleView from './AnimalDetalleView';
+import PesajeMasivoView from './PesajeMasivoView';
 
 const ESTADOS = ['Vivo', 'Vendido', 'Muerto'];
 
 export default function GanadoView({ showToast }) {
+  // Control de vistas principales dentro del módulo: 'listado', 'detalle', 'pesaje-masivo'
+  const [vistaActual, setVistaActual] = useState('listado');
+  const [animalSeleccionadoId, setAnimalSeleccionadoId] = useState(null);
+
   const [animales, setAnimales] = useState([]);
   const [corrales, setCorrales] = useState([]);
   const [tiposAnimal, setTiposAnimal] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Filtros
   const [busqueda, setBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('todos');
   const [filtroCorral, setFiltroCorral] = useState('todos');
+  const [filtroTipo, setFiltroTipo] = useState('todos'); // Nuevo filtro por tipo de ganado
 
+  // Modal de Crear / Editar Animal
   const [modalOpen, setModalOpen] = useState(false);
   const [animalSeleccionado, setAnimalSeleccionado] = useState(null);
 
@@ -67,17 +76,18 @@ export default function GanadoView({ showToast }) {
   const filtrados = animales.filter(a => {
     const matchEstado = filtroEstado === 'todos' || a.estado.toLowerCase() === filtroEstado.toLowerCase();
     const matchCorral = filtroCorral === 'todos' || String(a.idCorral) === String(filtroCorral);
+    const matchTipo = filtroTipo === 'todos' || String(a.idTipoAnimal) === String(filtroTipo);
     const matchBusq = busqueda === '' || 
       a.areteBandera.toLowerCase().includes(busqueda.toLowerCase()) ||
       (a.nombre && a.nombre.toLowerCase().includes(busqueda.toLowerCase()));
-    return matchEstado && matchCorral && matchBusq;
+    return matchEstado && matchCorral && matchTipo && matchBusq;
   });
 
   const totalActivos = animales.filter(a => a.estado.toLowerCase() === 'vivo').length;
   const totalVendidos = animales.filter(a => a.estado.toLowerCase() === 'vendido').length;
   const totalMuertos = animales.filter(a => a.estado.toLowerCase() === 'muerto').length;
 
-  // ── Guardar (Crear o Actualizar) ──────────────────────────
+  // ── Guardar (Crear o Actualizar) con validación de límite de corral ──
   const handleGuardar = async (formData) => {
     try {
       const url = animalSeleccionado 
@@ -99,7 +109,7 @@ export default function GanadoView({ showToast }) {
         setAnimalSeleccionado(null);
         recargarDatos();
         showToast({ 
-          message: animalSeleccionado ? 'Animal actualizado correctamente.' : `Animal ${formData.areteBandera} registrado exitosamente.`, 
+          message: animalSeleccionado ? 'Animal actualizado correctamente.' : (datos.message || 'Animal registrado con éxito.'), 
           type: 'success' 
         });
       } else {
@@ -135,6 +145,28 @@ export default function GanadoView({ showToast }) {
     return `${Math.floor(meses / 12)} años`;
   };
 
+  // 1. Renderizar vista de Detalle Individual (Trazabilidad y Pesos)
+  if (vistaActual === 'detalle') {
+    return (
+      <AnimalDetalleView
+        animalId={animalSeleccionadoId}
+        onBack={() => { setVistaActual('listado'); setAnimalSeleccionadoId(null); }}
+        showToast={showToast}
+      />
+    );
+  }
+
+  // 2. Renderizar vista de Pesaje Masivo por Lote
+  if (vistaActual === 'pesaje-masivo') {
+    return (
+      <PesajeMasivoView
+        onBack={() => { setVistaActual('listado'); recargarDatos(); }}
+        showToast={showToast}
+      />
+    );
+  }
+
+  // 3. Vista Principal de Listado
   return (
     <div className="space-y-5">
 
@@ -154,9 +186,9 @@ export default function GanadoView({ showToast }) {
 
       {/* ── Barra de herramientas ────────────────────────── */}
       <div className="bg-white rounded-xl border border-slate-100 shadow-sm">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border-b border-slate-100">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 p-4 border-b border-slate-100">
           {/* Búsqueda */}
-          <div className="relative w-full sm:w-72">
+          <div className="relative w-full lg:w-72">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
@@ -167,10 +199,10 @@ export default function GanadoView({ showToast }) {
             />
           </div>
 
-          {/* Filtros y botón */}
-          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+          {/* Filtros y botones de acción */}
+          <div className="flex flex-wrap gap-2 w-full lg:w-auto items-center">
             {/* Filtro estado */}
-            <div className="flex items-center gap-1.5 border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-600">
+            <div className="flex items-center gap-1.5 border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-600 bg-white">
               <Filter size={13} className="text-slate-400" />
               <select
                 value={filtroEstado}
@@ -183,7 +215,8 @@ export default function GanadoView({ showToast }) {
             </div>
 
             {/* Filtro corral */}
-            <div className="flex items-center gap-1.5 border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-600">
+            <div className="flex items-center gap-1.5 border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-600 bg-white">
+              <Building2 size={13} className="text-slate-400" />
               <select
                 value={filtroCorral}
                 onChange={e => setFiltroCorral(e.target.value)}
@@ -194,10 +227,33 @@ export default function GanadoView({ showToast }) {
               </select>
             </div>
 
-            {/* Botón nuevo */}
+            {/* Filtro tipo de ganado */}
+            <div className="flex items-center gap-1.5 border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-600 bg-white">
+              <Beef size={13} className="text-slate-400" />
+              <select
+                value={filtroTipo}
+                onChange={e => setFiltroTipo(e.target.value)}
+                className="bg-transparent focus:outline-none text-sm"
+              >
+                <option value="todos">Todos los tipos</option>
+                {tiposAnimal.map(t => <option key={t.idTipoAnimal} value={t.idTipoAnimal}>{t.nombre}</option>)}
+              </select>
+            </div>
+
+            {/* Botón Báscula Masiva */}
+            <button
+              onClick={() => setVistaActual('pesaje-masivo')}
+              className="flex items-center gap-1.5 bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 text-sm font-medium px-3.5 py-2 rounded-lg transition border border-slate-200"
+              title="Registrar pesaje masivo por lote"
+            >
+              <Scale size={15} />
+              Báscula Masiva
+            </button>
+
+            {/* Botón nuevo animal */}
             <button
               onClick={() => { setAnimalSeleccionado(null); setModalOpen(true); }}
-              className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors shadow-sm"
             >
               <Plus size={15} />
               Registrar animal
@@ -243,7 +299,9 @@ export default function GanadoView({ showToast }) {
                   <td className="px-4 py-3 text-slate-700 font-medium">{a.nombre || '—'}</td>
                   <td className="px-4 py-3 text-slate-600">
                     <span className="font-semibold text-slate-800">{a.tipoAnimal?.nombre}</span>
-                    <span className="block text-xs text-slate-400">{a.raza}</span>
+                    <span className="block text-xs text-slate-400">
+                      {a.raza?.nombre} {a.detalleMestizo ? `(${a.detalleMestizo})` : ''}
+                    </span>
                   </td>
                   <td className="px-4 py-3 text-slate-600">{a.genero}</td>
                   <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{calcEdad(a.fechaNacimiento)}</td>
@@ -254,10 +312,18 @@ export default function GanadoView({ showToast }) {
                   </td>
                   <td className="px-4 py-3"><Badge estado={a.estado.toLowerCase()} /></td>
                   <td className="px-4 py-3 text-right space-x-1 whitespace-nowrap">
+                    {/* Botón Ver Ficha e Historiales */}
+                    <button
+                      onClick={() => { setAnimalSeleccionadoId(a.idAnimal); setVistaActual('detalle'); }}
+                      className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition inline-flex items-center"
+                      title="Ver Ficha y Pesajes"
+                    >
+                      <Eye size={16} />
+                    </button>
                     <button
                       onClick={() => { setAnimalSeleccionado(a); setModalOpen(true); }}
                       className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
-                      title="Editar animal"
+                      title="Editar datos del animal"
                     >
                       <Edit3 size={16} />
                     </button>
@@ -287,6 +353,7 @@ export default function GanadoView({ showToast }) {
           animalAEditar={animalSeleccionado}
           corrales={corrales}
           tiposAnimal={tiposAnimal}
+          animalesLista={animales}
           onSubmit={handleGuardar}
           onCancel={() => { setModalOpen(false); setAnimalSeleccionado(null); }}
         />
