@@ -87,7 +87,7 @@ export default function GanadoView({ showToast }) {
   const totalVendidos = animales.filter(a => a.estado.toLowerCase() === 'vendido').length;
   const totalMuertos = animales.filter(a => a.estado.toLowerCase() === 'muerto').length;
 
-  // ── Guardar (Crear o Actualizar) con validación de límite de corral ──
+  // ── Guardar (Crear o Actualizar) con validación de límite de corral y Alerta de Endogamia ──
   const handleGuardar = async (formData) => {
     try {
       const url = animalSeleccionado 
@@ -108,6 +108,12 @@ export default function GanadoView({ showToast }) {
         setModalOpen(false);
         setAnimalSeleccionado(null);
         recargarDatos();
+
+        // Si el backend detectó que el padre o madre están en el mismo corral, lanzamos alerta visual
+        if (datos.warning) {
+          alert(datos.warning);
+        }
+
         showToast({ 
           message: animalSeleccionado ? 'Animal actualizado correctamente.' : (datos.message || 'Animal registrado con éxito.'), 
           type: 'success' 

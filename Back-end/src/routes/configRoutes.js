@@ -1,5 +1,3 @@
-// configRoutes.js — Rutas para la configuración general y catálogos de corrales y tipos de animal
-
 import express from 'express';
 import { 
   obtenerConfiguracion, 
@@ -11,7 +9,11 @@ import {
   obtenerTiposAnimal,
   crearTipoAnimal,
   actualizarTipoAnimal,
-  eliminarTipoAnimal
+  eliminarTipoAnimal,
+  obtenerPuestosEmpleado,
+  crearPuestoEmpleado,
+  actualizarPuestoEmpleado,
+  eliminarPuestoEmpleado
 } from '../controllers/configController.js';
 
 const router = express.Router();
@@ -31,5 +33,11 @@ router.get('/tipos-animal', obtenerTiposAnimal);
 router.post('/tipos-animal', crearTipoAnimal);
 router.put('/tipos-animal/:id', actualizarTipoAnimal);
 router.delete('/tipos-animal/:id', eliminarTipoAnimal);
+
+// ==================== PUESTOS DE EMPLEADOS ====================
+router.get('/puestos', obtenerPuestosEmpleado);
+router.post('/puestos', crearPuestoEmpleado);
+router.put('/puestos/:id', actualizarPuestoEmpleado);
+router.delete('/puestos/:id', eliminarPuestoEmpleado);
 
 export default router;

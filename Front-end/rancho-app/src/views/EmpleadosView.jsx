@@ -1,47 +1,59 @@
-// EmpleadosView.jsx — Gestión completa de Empleados y Administradores
+// EmpleadosView.jsx — Actualizado con puestos dinámicos y sin errores de ESLint
 import { useState, useEffect } from 'react';
 import { Users, UserPlus, Trash2, Edit3, Shield, User, Mail, Phone, Briefcase, AlertCircle } from 'lucide-react';
 import EmpleadoForm from './forms/EmpleadoForm';
 
 export default function EmpleadosView() {
   const [empleados, setEmpleados] = useState([]);
+  const [puestos, setPuestos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState(null);
 
-  const obtenerEmpleados = async () => {
-    try {
-      const res = await fetch('http://localhost:4000/api/empleados');
-      const data = await res.json();
-      if (res.ok) setEmpleados(data);
-      else setError(data.error || 'Error al cargar empleados');
-    } catch {
-      setError('No se pudo conectar con el servidor.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
     let isMounted = true;
-    const cargarDatos = async () => {
+
+    async function cargarDatosEmpleados() {
       try {
-        const res = await fetch('http://localhost:4000/api/empleados');
-        const data = await res.json();
+        const [resEmp, resPuestos] = await Promise.all([
+          fetch('http://localhost:4000/api/empleados'),
+          fetch('http://localhost:4000/api/configuracion/puestos')
+        ]);
+        
+        const dataEmp = await resEmp.json();
+        const dataPuestos = await resPuestos.json();
+
         if (isMounted) {
-          if (res.ok) setEmpleados(data);
-          else setError(data.error || 'Error al cargar empleados');
+          if (resEmp.ok) setEmpleados(dataEmp);
+          if (resPuestos.ok) setPuestos(dataPuestos);
         }
       } catch {
         if (isMounted) setError('No se pudo conectar con el servidor.');
       } finally {
         if (isMounted) setLoading(false);
       }
+    }
+
+    cargarDatosEmpleados();
+
+    return () => {
+      isMounted = false;
     };
-    cargarDatos();
-    return () => { isMounted = false; };
   }, []);
+
+  const refrescarDatos = async () => {
+    try {
+      const [resEmp, resPuestos] = await Promise.all([
+        fetch('http://localhost:4000/api/empleados'),
+        fetch('http://localhost:4000/api/configuracion/puestos')
+      ]);
+      if (resEmp.ok) setEmpleados(await resEmp.json());
+      if (resPuestos.ok) setPuestos(await resPuestos.json());
+    } catch {
+      setError('No se pudo conectar con el servidor.');
+    }
+  };
 
   const handleGuardarEmpleado = async (formData) => {
     try {
@@ -61,8 +73,13 @@ export default function EmpleadosView() {
       if (res.ok) {
         setIsModalOpen(false);
         setEmpleadoSeleccionado(null);
-        obtenerEmpleados();
-        alert(empleadoSeleccionado ? 'Empleado actualizado con éxito.' : 'Empleado registrado con éxito.');
+        await refrescarDatos();
+        
+        if (data.passwordTemporal) {
+          alert(`✅ Empleado registrado con éxito.\n\n🔑 Contraseña temporal generada automáticamente: ${data.passwordTemporal}`);
+        } else {
+          alert(empleadoSeleccionado ? 'Empleado actualizado con éxito.' : 'Empleado registrado con éxito.');
+        }
       } else {
         alert(data.error || 'Error al guardar');
       }
@@ -75,8 +92,7 @@ export default function EmpleadosView() {
     if (!confirm('¿Estás seguro de eliminar este empleado del sistema?')) return;
     try {
       const res = await fetch(`http://localhost:4000/api/empleados/${id}`, { method: 'DELETE' });
-      if (res.ok) obtenerEmpleados();
-      else alert('No se pudo eliminar el empleado.');
+      if (res.ok) await refrescarDatos();
     } catch {
       alert('Error de red al eliminar.');
     }
@@ -90,7 +106,7 @@ export default function EmpleadosView() {
             <Users className="text-emerald-600" /> Gestión de Empleados y Usuarios
           </h1>
           <p className="text-slate-500 text-sm mt-1">
-            Administra los accesos, roles y personal del Rancho Puerta Pesada.
+            Administra los accesos, roles y personal del Rancho.
           </p>
         </div>
         <button
@@ -150,7 +166,7 @@ export default function EmpleadosView() {
                     <td className="py-4 px-6">
                       <span className="inline-flex items-center gap-1.5 text-slate-700 font-medium text-xs bg-slate-100 px-2.5 py-1 rounded-lg">
                         <Briefcase size={13} className="text-slate-500" />
-                        {emp.puesto || 'No asignado'}
+                        {emp.puestoRelacion?.nombre || 'No asignado'}
                       </span>
                     </td>
                     <td className="py-4 px-6">
@@ -190,6 +206,7 @@ export default function EmpleadosView() {
       {isModalOpen && (
         <EmpleadoForm 
           empleadoAEditar={empleadoSeleccionado}
+          puestosDisponibles={puestos}
           onSubmit={handleGuardarEmpleado} 
           onCancel={() => { setIsModalOpen(false); setEmpleadoSeleccionado(null); }} 
         />

@@ -1,13 +1,13 @@
-// src/views/forms/EmpleadoForm.jsx — Formulario reutilizable para crear y editar empleados
+// src/views/forms/EmpleadoForm.jsx — Formulario con Puestos Dinámicos
 import { useState } from 'react';
 
-export default function EmpleadoForm({ empleadoAEditar, onSubmit, onCancel }) {
+export default function EmpleadoForm({ empleadoAEditar, puestosDisponibles, onSubmit, onCancel }) {
   const [form, setForm] = useState({
     nombreCompleto: empleadoAEditar?.nombreCompleto || '',
     correo: empleadoAEditar?.correo || '',
     contrasenaHash: '',
     rol: empleadoAEditar?.rol || 'Empleado',
-    puesto: empleadoAEditar?.puesto || 'Vaquero',
+    idPuesto: empleadoAEditar?.idPuesto || (puestosDisponibles[0]?.idPuesto ?? ''),
     telefono: empleadoAEditar?.telefono || ''
   });
 
@@ -50,14 +50,13 @@ export default function EmpleadoForm({ empleadoAEditar, onSubmit, onCancel }) {
 
           <div>
             <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">
-              {empleadoAEditar ? 'Nueva Contraseña (Opcional)' : 'Contraseña Temporal'}
+              {empleadoAEditar ? 'Nueva Contraseña (Opcional)' : 'Contraseña (Opcional — Se autogenera si se deja en blanco)'}
             </label>
             <input
               type="password"
-              required={!empleadoAEditar}
               value={form.contrasenaHash}
               onChange={e => setForm({...form, contrasenaHash: e.target.value})}
-              placeholder={empleadoAEditar ? 'Dejar en blanco para mantener la actual' : '••••••••'}
+              placeholder={empleadoAEditar ? 'Dejar en blanco para mantener la actual' : 'Autogenerada por iniciales y año si está vacío'}
               className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             />
           </div>
@@ -77,15 +76,14 @@ export default function EmpleadoForm({ empleadoAEditar, onSubmit, onCancel }) {
             <div>
               <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">Puesto (Rancho)</label>
               <select
-                value={form.puesto}
-                onChange={e => setForm({...form, puesto: e.target.value})}
+                value={form.idPuesto}
+                onChange={e => setForm({...form, idPuesto: e.target.value})}
                 className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white"
               >
-                <option value="Capataz">Capataz</option>
-                <option value="Veterinario">Veterinario</option>
-                <option value="Vaquero">Vaquero</option>
-                <option value="Encargado de Ordeña">Encargado de Ordeña</option>
-                <option value="Administrador de Campo">Administrador de Campo</option>
+                <option value="">Selecciona un puesto</option>
+                {puestosDisponibles.map(p => (
+                  <option key={p.idPuesto} value={p.idPuesto}>{p.nombre}</option>
+                ))}
               </select>
             </div>
           </div>

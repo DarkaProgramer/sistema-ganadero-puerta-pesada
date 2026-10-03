@@ -1,5 +1,34 @@
 import prisma from '../config/db.js';
 
+// Función auxiliar para verificar si el padre o la madre ya están en el corral seleccionado
+const verificarEndogamia = async (idCorral, idPadre, idMadre, animalIdExcluir = null) => {
+  if (!idCorral) return null;
+
+  const animalesEnCorral = await prisma.animal.findMany({
+    where: { 
+      idCorral: Number(idCorral),
+      estado: 'Vivo',
+      ...(animalIdExcluir ? { idAnimal: { not: Number(animalIdExcluir) } } : {})
+    },
+    select: { idAnimal: true, areteBandera: true, nombre: true }
+  });
+
+  const idsEnCorral = animalesEnCorral.map(a => a.idAnimal);
+  let advertencia = null;
+
+  if (idPadre && idsEnCorral.includes(Number(idPadre))) {
+    const padre = animalesEnCorral.find(a => a.idAnimal === Number(idPadre));
+    advertencia = `⚠️ Advertencia de Endogamia: El padre (Arete: ${padre?.areteBandera || idPadre}) ya se encuentra habitando en este mismo corral.`;
+  }
+
+  if (idMadre && idsEnCorral.includes(Number(idMadre))) {
+    const madre = animalesEnCorral.find(a => a.idAnimal === Number(idMadre));
+    advertencia = `⚠️ Advertencia de Endogamia: La madre (Arete: ${madre?.areteBandera || idMadre}) ya se encuentra habitando en este mismo corral.`;
+  }
+
+  return advertencia;
+};
+
 // Obtener todos los animales con sus relaciones completas (Corral, Tipo, Raza y Genética)
 export const obtenerAnimales = async (req, res) => {
   try {
@@ -19,7 +48,7 @@ export const obtenerAnimales = async (req, res) => {
   }
 };
 
-// Registrar un nuevo animal con validación de capacidad, razas, mestizos y línea genética opcional
+// Registrar un nuevo animal con validación de capacidad, razas, mestizos, línea genética y alerta de endogamia
 export const registrarAnimal = async (req, res) => {
   try {
     const { 
@@ -68,11 +97,14 @@ export const registrarAnimal = async (req, res) => {
     // 4. Asegurar formato de origen
     const origenCorto = origen?.toLowerCase().includes('compra') ? 'Compra' : 'Nacimiento';
 
-    // 5. Limpieza y conversión segura de IDs (evita mandar strings vacíos "")
+    // 5. Limpieza y conversión segura de IDs
     const padreIdNum = (origenCorto === 'Nacimiento' && idPadre && idPadre !== '') ? Number(idPadre) : null;
     const madreIdNum = (origenCorto === 'Nacimiento' && idMadre && idMadre !== '') ? Number(idMadre) : null;
 
-    // 6. Registrar el animal con sus relaciones genéticas opcionales
+    // 6. Verificar alerta de endogamia (parentesco en el mismo corral)
+    const alertaEndogamia = await verificarEndogamia(corralIdNum, padreIdNum, madreIdNum);
+
+    // 7. Registrar el animal con sus relaciones genéticas opcionales
     const nuevoAnimal = await prisma.animal.create({
       data: {
         idCorral: corralIdNum,
@@ -93,14 +125,18 @@ export const registrarAnimal = async (req, res) => {
       include: { corral: true, tipoAnimal: true, raza: true, padre: true, madre: true }
     });
 
-    res.status(201).json({ message: 'Animal registrado con éxito', animal: nuevoAnimal });
+    res.status(201).json({ 
+      message: 'Animal registrado con éxito', 
+      animal: nuevoAnimal,
+      warning: alertaEndogamia 
+    });
   } catch (error) {
     console.error('Error detallado al registrar animal:', error);
     res.status(500).json({ error: 'Error al registrar el animal', details: error.message });
   }
 };
 
-// Actualizar animal (incluyendo reubicación de corral, razas y línea genética)
+// Actualizar animal (incluyendo reubicación de corral, razas, línea genética y alerta de endogamia)
 export const actualizarAnimal = async (req, res) => {
   try {
     const { id } = req.params;
@@ -159,6 +195,9 @@ export const actualizarAnimal = async (req, res) => {
     const padreIdNum = (origenCorto === 'Nacimiento' && idPadre && idPadre !== '') ? Number(idPadre) : null;
     const madreIdNum = (origenCorto === 'Nacimiento' && idMadre && idMadre !== '') ? Number(idMadre) : null;
 
+    // Verificar alerta de endogamia excluyendo al propio animal
+    const alertaEndogamia = await verificarEndogamia(corralIdNum, padreIdNum, madreIdNum, animalIdNum);
+
     const animalActualizado = await prisma.animal.update({
       where: { idAnimal: animalIdNum },
       data: {
@@ -180,7 +219,11 @@ export const actualizarAnimal = async (req, res) => {
       include: { corral: true, tipoAnimal: true, raza: true, padre: true, madre: true }
     });
 
-    res.json({ message: 'Animal actualizado con éxito', animal: animalActualizado });
+    res.json({ 
+      message: 'Animal actualizado con éxito', 
+      animal: animalActualizado,
+      warning: alertaEndogamia 
+    });
   } catch (error) {
     console.error('Error detallado al actualizar animal:', error);
     res.status(500).json({ error: 'Error al actualizar el animal', details: error.message });
@@ -200,18 +243,24 @@ export const eliminarAnimal = async (req, res) => {
   }
 };
 
-// Catálogos incluyendo corrales, tipos con razas y lista de animales vivos para los selectores de padres/madres
+// Catálogos: Solo devuelve tipos de animal y razas que estén activos (activo: true)
 export const obtenerCatalogosAnimales = async (req, res) => {
   try {
     const corrales = await prisma.corral.findMany();
+    
+    // Filtrar únicamente los tipos de animal activos y sus razas activas
     const tiposAnimal = await prisma.tipoAnimal.findMany({
-      include: { razas: true }
+      where: { activo: true },
+      include: { 
+        razas: {
+          where: { activo: true }
+        } 
+      }
     });
     
-    // Lista de animales vivos para asignar padres y madres por arete/nombre en el formulario
     const animalesLista = await prisma.animal.findMany({
       where: { estado: 'Vivo' },
-      select: { idAnimal: true, areteBandera: true, nombre: true, genero: true },
+      select: { idAnimal: true, areteBandera: true, nombre: true, genero: true, idCorral: true },
       orderBy: { areteBandera: 'asc' }
     });
 

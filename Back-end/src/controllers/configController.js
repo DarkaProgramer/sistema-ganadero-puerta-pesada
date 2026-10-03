@@ -115,21 +115,24 @@ export const obtenerTiposAnimal = async (req, res) => {
 export const crearTipoAnimal = async (req, res) => {
   try {
     const { nombre } = req.body;
-    const nuevoTipo = await prisma.tipoAnimal.create({ data: { nombre } });
+    const nuevoTipo = await prisma.tipoAnimal.create({ data: { nombre, activo: true } });
     res.status(201).json({ message: 'Tipo de animal creado con éxito', tipoAnimal: nuevoTipo });
   } catch (error) {
     res.status(500).json({ error: 'Error al registrar el tipo de animal', details: error.message });
   }
 };
 
-// Actualizar un tipo de animal
+// Actualizar un tipo de animal (incluyendo su estado activo/inactivo)
 export const actualizarTipoAnimal = async (req, res) => {
   try {
     const { id } = req.params;
-    const { nombre } = req.body;
+    const { nombre, activo } = req.body;
     const tipoActualizado = await prisma.tipoAnimal.update({
       where: { idTipoAnimal: Number(id) },
-      data: { nombre }
+      data: { 
+        ...(nombre !== undefined && { nombre }),
+        ...(activo !== undefined && { activo })
+      }
     });
     res.json({ message: 'Tipo actualizado con éxito', tipoAnimal: tipoActualizado });
   } catch (error) {
@@ -145,5 +148,60 @@ export const eliminarTipoAnimal = async (req, res) => {
     res.json({ message: 'Tipo de animal eliminado correctamente' });
   } catch (error) {
     res.status(500).json({ error: 'Error al eliminar el tipo de animal', details: error.message });
+  }
+};
+
+
+// ==================== PUESTOS DE EMPLEADOS ====================
+
+// Obtener todos los puestos
+export const obtenerPuestosEmpleado = async (req, res) => {
+  try {
+    const puestos = await prisma.puestoEmpleado.findMany();
+    res.json(puestos);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener los puestos de empleado', details: error.message });
+  }
+};
+
+// Crear un nuevo puesto personalizado
+export const crearPuestoEmpleado = async (req, res) => {
+  try {
+    const { nombre } = req.body;
+    const nuevoPuesto = await prisma.puestoEmpleado.create({ 
+      data: { nombre, activo: true } 
+    });
+    res.status(201).json({ message: 'Puesto creado con éxito', puesto: nuevoPuesto });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al registrar el puesto', details: error.message });
+  }
+};
+
+// Actualizar un puesto (nombre o estado activo/inactivo)
+export const actualizarPuestoEmpleado = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nombre, activo } = req.body;
+    const puestoActualizado = await prisma.puestoEmpleado.update({
+      where: { idPuesto: Number(id) },
+      data: { 
+        ...(nombre !== undefined && { nombre }), 
+        ...(activo !== undefined && { activo }) 
+      }
+    });
+    res.json({ message: 'Puesto actualizado con éxito', puesto: puestoActualizado });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al actualizar el puesto', details: error.message });
+  }
+};
+
+// Eliminar un puesto
+export const eliminarPuestoEmpleado = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.puestoEmpleado.delete({ where: { idPuesto: Number(id) } });
+    res.json({ message: 'Puesto eliminado correctamente' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al eliminar el puesto', details: error.message });
   }
 };

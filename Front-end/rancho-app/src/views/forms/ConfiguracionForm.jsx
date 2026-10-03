@@ -183,7 +183,7 @@ export function TipoAnimalForm({ tipoAEditar, onSubmit, onCancel }) {
               <option value="Caprino">Caprino (Cabras / Chivos)</option>
               <option value="Porcino">Porcino (Cerdos / Puercos)</option>
               <option value="Equino">Equino (Caballos / Yeguas / Ponis)</option>
-              <option value="Aves">Aves (Gallinas /plumas)</option>
+              <option value="Aves">Aves (Gallinas / plumas)</option>
             </select>
             <p className="text-[11px] text-slate-400 mt-1">Selecciona la categoría oficial del catálogo pecuario.</p>
           </div>
@@ -207,3 +207,50 @@ export function TipoAnimalForm({ tipoAEditar, onSubmit, onCancel }) {
     </div>
   );
 }
+
+export function PuestoForm({ puestoAEditar, onSubmit, onCancel }) {
+  const [nombre, setNombre] = useState(puestoAEditar?.nombre || '');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit({ nombre });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-8 border border-slate-100">
+        <h3 className="text-xl font-bold text-slate-800 mb-6">
+          {puestoAEditar ? 'Editar Puesto' : 'Nuevo Puesto de Trabajo'}
+        </h3>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">Nombre del Puesto</label>
+            <input
+              type="text"
+              required
+              value={nombre}
+              onChange={e => setNombre(e.target.value)}
+              placeholder="Ej. Vaquero, Herrador, Capataz"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 transition"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-medium transition shadow-sm"
+            >
+              Guardar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+} 

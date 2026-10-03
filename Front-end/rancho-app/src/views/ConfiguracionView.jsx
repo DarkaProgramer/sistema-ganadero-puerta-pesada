@@ -1,48 +1,51 @@
 // ConfiguracionView.jsx — Panel visual exclusivo para Administradores
 import { useState, useEffect } from 'react';
-import { Settings, ShieldAlert, Building2, Beef, Edit3, Plus } from 'lucide-react';
-import { GeneralConfigForm, CorralForm, TipoAnimalForm } from './forms/ConfiguracionForm';
+import { Settings, ShieldAlert, Building2, Beef, Edit3, Plus, Briefcase, Power } from 'lucide-react';
+import { GeneralConfigForm, CorralForm, TipoAnimalForm, PuestoForm } from './forms/ConfiguracionForm';
 
 export default function ConfiguracionView({ usuario, showToast }) {
   const [config, setConfig] = useState(null);
   const [corrales, setCorrales] = useState([]);
   const [tiposAnimal, setTiposAnimal] = useState([]);
+  const [puestos, setPuestos] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Estados para controlar los modales
   const [modalGeneralOpen, setModalGeneralOpen] = useState(false);
   const [modalCorralOpen, setModalCorralOpen] = useState(false);
   const [modalTipoOpen, setModalTipoOpen] = useState(false);
+  const [modalPuestoOpen, setModalPuestoOpen] = useState(false);
   
-  // Estado para saber qué corral se está editando (si es null, es nuevo)
   const [corralAEditar, setCorralAEditar] = useState(null);
+  const [puestoAEditar, setPuestoAEditar] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
 
     async function cargarDatos() {
       try {
-        const [resConf, resCorrales, resTipos] = await Promise.all([
+        const [resConf, resCorrales, resTipos, resPuestos] = await Promise.all([
           fetch('http://localhost:4000/api/configuracion'),
           fetch('http://localhost:4000/api/configuracion/corrales'),
-          fetch('http://localhost:4000/api/configuracion/tipos-animal')
+          fetch('http://localhost:4000/api/configuracion/tipos-animal'),
+          fetch('http://localhost:4000/api/configuracion/puestos')
         ]);
 
         const dataConf = await resConf.json();
         const dataCorrales = await resCorrales.json();
         const dataTipos = await resTipos.json();
+        const dataPuestos = await resPuestos.json();
 
         if (isMounted) {
           if (resConf.ok) setConfig(dataConf);
           if (resCorrales.ok) setCorrales(dataCorrales);
           if (resTipos.ok) setTiposAnimal(dataTipos);
+          if (resPuestos.ok) setPuestos(dataPuestos);
         }
       } catch (err) {
         console.error('Error al cargar configuración:', err);
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        if (isMounted) setLoading(false);
       }
     }
 
@@ -55,22 +58,24 @@ export default function ConfiguracionView({ usuario, showToast }) {
 
   const cargarDatosRefresco = async () => {
     try {
-      const [resConf, resCorrales, resTipos] = await Promise.all([
+      const [resConf, resCorrales, resTipos, resPuestos] = await Promise.all([
         fetch('http://localhost:4000/api/configuracion'),
         fetch('http://localhost:4000/api/configuracion/corrales'),
-        fetch('http://localhost:4000/api/configuracion/tipos-animal')
+        fetch('http://localhost:4000/api/configuracion/tipos-animal'),
+        fetch('http://localhost:4000/api/configuracion/puestos')
       ]);
 
       if (resConf.ok) setConfig(await resConf.json());
       if (resCorrales.ok) setCorrales(await resCorrales.json());
       if (resTipos.ok) setTiposAnimal(await resTipos.json());
+      if (resPuestos.ok) setPuestos(await resPuestos.json());
     } catch (err) {
       console.error('Error al refrescar datos:', err);
     }
   };
 
   // Validación estricta de rol Administrador
-  if (usuario?.rol !== 'administrador') {
+  if (usuario?.rol !== 'Administrador' && usuario?.rol !== 'administrador') {
     return (
       <div className="p-12 max-w-xl mx-auto text-center bg-white rounded-3xl shadow-sm border border-slate-100 mt-12">
         <div className="w-16 h-16 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -108,7 +113,6 @@ export default function ConfiguracionView({ usuario, showToast }) {
       const url = corralAEditar 
         ? `http://localhost:4000/api/configuracion/corrales/${corralAEditar.idCorral}`
         : 'http://localhost:4000/api/configuracion/corrales';
-      
       const method = corralAEditar ? 'PUT' : 'POST';
 
       const res = await fetch(url, {
@@ -121,9 +125,7 @@ export default function ConfiguracionView({ usuario, showToast }) {
         setModalCorralOpen(false);
         setCorralAEditar(null);
         await cargarDatosRefresco();
-        showToast({ message: corralAEditar ? 'Corral actualizado con éxito.' : 'Corral registrado con éxito.', type: 'success' });
-      } else {
-        alert('Error al guardar el corral.');
+        showToast({ message: corralAEditar ? 'Corral actualizado.' : 'Corral registrado.', type: 'success' });
       }
     } catch {
       alert('Error de red.');
@@ -140,9 +142,47 @@ export default function ConfiguracionView({ usuario, showToast }) {
       if (res.ok) {
         setModalTipoOpen(false);
         await cargarDatosRefresco();
-        showToast({ message: 'Tipo de ganado registrado con éxito.', type: 'success' });
-      } else {
-        alert('Error al crear tipo.');
+        showToast({ message: 'Tipo de ganado registrado.', type: 'success' });
+      }
+    } catch {
+      alert('Error de red.');
+    }
+  };
+
+  // Alternar Estado Activo / Inactivo de Tipo de Ganado
+  const handleToggleEstadoTipo = async (tipo) => {
+    try {
+      const res = await fetch(`http://localhost:4000/api/configuracion/tipos-animal/${tipo.idTipoAnimal}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ activo: !tipo.activo })
+      });
+      if (res.ok) {
+        await cargarDatosRefresco();
+        showToast({ message: `Estado de ${tipo.nombre} actualizado.`, type: 'info' });
+      }
+    } catch {
+      alert('Error al cambiar estado.');
+    }
+  };
+
+  const handleGuardarPuesto = async (formData) => {
+    try {
+      const url = puestoAEditar 
+        ? `http://localhost:4000/api/configuracion/puestos/${puestoAEditar.idPuesto}`
+        : 'http://localhost:4000/api/configuracion/puestos';
+      const method = puestoAEditar ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      if (res.ok) {
+        setModalPuestoOpen(false);
+        setPuestoAEditar(null);
+        await cargarDatosRefresco();
+        showToast({ message: puestoAEditar ? 'Puesto actualizado.' : 'Puesto creado.', type: 'success' });
       }
     } catch {
       alert('Error de red.');
@@ -153,7 +193,6 @@ export default function ConfiguracionView({ usuario, showToast }) {
 
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8">
-      {/* Cabecera visual */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
@@ -184,7 +223,6 @@ export default function ConfiguracionView({ usuario, showToast }) {
             </p>
           </div>
         </div>
-
         <button
           onClick={() => setModalGeneralOpen(true)}
           className="bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 px-4 py-2.5 rounded-xl font-medium text-sm flex items-center gap-2 transition"
@@ -193,36 +231,35 @@ export default function ConfiguracionView({ usuario, showToast }) {
         </button>
       </div>
 
-      {/* Secciones de Corrales y Tipos */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Secciones de Corrales, Tipos de Ganado y Puestos */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
         {/* Corrales */}
         <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                <Building2 size={18} className="text-emerald-600" /> Corrales ({corrales.length})
+                <Building2 size={18} className="text-emerald-600" /> Corrales
               </h3>
               <button
                 onClick={() => { setCorralAEditar(null); setModalCorralOpen(true); }}
                 className="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl transition flex items-center gap-1 text-xs font-semibold px-3"
-                title="Añadir corral"
               >
                 <Plus size={16} /> Nuevo
               </button>
             </div>
             <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
               {corrales.map(c => (
-                <div key={c.idCorral} className="flex items-center justify-between p-3.5 bg-slate-50/70 rounded-2xl text-sm border border-slate-100">
+                <div key={c.idCorral} className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl text-sm border border-slate-100">
                   <div>
                     <span className="font-semibold text-slate-800 block">{c.nombre}</span>
-                    <span className="text-xs text-slate-400">Capacidad máxima: <strong>{c.capacidadMaxima}</strong></span>
+                    <span className="text-xs text-slate-400">Máx: {c.capacidadMaxima}</span>
                   </div>
                   <button
                     onClick={() => { setCorralAEditar(c); setModalCorralOpen(true); }}
-                    className="p-2 bg-white hover:bg-emerald-50 text-slate-600 hover:text-emerald-600 rounded-xl border border-slate-200/60 transition shadow-sm"
-                    title="Editar corral"
+                    className="p-2 bg-white hover:bg-emerald-50 text-slate-600 rounded-xl border border-slate-200 transition"
                   >
-                    <Edit3 size={15} />
+                    <Edit3 size={14} />
                   </button>
                 </div>
               ))}
@@ -230,58 +267,72 @@ export default function ConfiguracionView({ usuario, showToast }) {
           </div>
         </div>
 
-        {/* Tipos de Ganado */}
+        {/* Tipos de Ganado (Sin botón de Nuevo) */}
         <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                <Beef size={18} className="text-emerald-600" /> Tipos de Ganado ({tiposAnimal.length})
+                <Beef size={18} className="text-emerald-600" /> Tipos de Ganado
               </h3>
-              <button
-                onClick={() => setModalTipoOpen(true)}
-                className="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl transition flex items-center gap-1 text-xs font-semibold px-3"
-                title="Añadir tipo de ganado"
-              >
-                <Plus size={16} /> Nuevo
-              </button>
             </div>
             <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
               {tiposAnimal.map(t => (
-                <div key={t.idTipoAnimal} className="flex items-center justify-between p-3.5 bg-slate-50/70 rounded-2xl text-sm border border-slate-100">
+                <div key={t.idTipoAnimal} className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl text-sm border border-slate-100">
                   <span className="font-semibold text-slate-800">{t.nombre}</span>
-                  <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
-                    Activo
-                  </span>
+                  <button
+                    onClick={() => handleToggleEstadoTipo(t)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition ${
+                      t.activo 
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100' 
+                        : 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100'
+                    }`}
+                    title="Clic para cambiar estado"
+                  >
+                    <Power size={12} /> {t.activo ? 'Activo' : 'Inactivo'}
+                  </button>
                 </div>
               ))}
             </div>
           </div>
         </div>
+
+        {/* Puestos de Empleados */}
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                <Briefcase size={18} className="text-emerald-600" /> Puestos
+              </h3>
+              <button
+                onClick={() => { setPuestoAEditar(null); setModalPuestoOpen(true); }}
+                className="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl transition flex items-center gap-1 text-xs font-semibold px-3"
+              >
+                <Plus size={16} /> Nuevo
+              </button>
+            </div>
+            <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+              {puestos.map(p => (
+                <div key={p.idPuesto} className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl text-sm border border-slate-100">
+                  <span className="font-semibold text-slate-800">{p.nombre}</span>
+                  <button
+                    onClick={() => { setPuestoAEditar(p); setModalPuestoOpen(true); }}
+                    className="p-2 bg-white hover:bg-emerald-50 text-slate-600 rounded-xl border border-slate-200 transition"
+                  >
+                    <Edit3 size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
       </div>
 
       {/* Modales */}
-      {modalGeneralOpen && (
-        <GeneralConfigForm
-          configActual={config}
-          onSubmit={handleGuardarGeneral}
-          onCancel={() => setModalGeneralOpen(false)}
-        />
-      )}
-
-      {modalCorralOpen && (
-        <CorralForm
-          corralAEditar={corralAEditar}
-          onSubmit={handleGuardarCorral}
-          onCancel={() => { setModalCorralOpen(false); setCorralAEditar(null); }}
-        />
-      )}
-
-      {modalTipoOpen && (
-        <TipoAnimalForm
-          onSubmit={handleCrearTipo}
-          onCancel={() => setModalTipoOpen(false)}
-        />
-      )}
+      {modalGeneralOpen && <GeneralConfigForm configActual={config} onSubmit={handleGuardarGeneral} onCancel={() => setModalGeneralOpen(false)} />}
+      {modalCorralOpen && <CorralForm corralAEditar={corralAEditar} onSubmit={handleGuardarCorral} onCancel={() => { setModalCorralOpen(false); setCorralAEditar(null); }} />}
+      {modalTipoOpen && <TipoAnimalForm onSubmit={handleCrearTipo} onCancel={() => setModalTipoOpen(false)} />}
+      {modalPuestoOpen && <PuestoForm puestoAEditar={puestoAEditar} onSubmit={handleGuardarPuesto} onCancel={() => { setModalPuestoOpen(false); setPuestoAEditar(null); }} />}
     </div>
   );
 }
