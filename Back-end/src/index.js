@@ -5,6 +5,7 @@ import authRoutes from './routes/authRoutes.js';
 import animalRoutes from './routes/animalRoutes.js';
 import configRoutes from './routes/configRoutes.js'; // <-- 1. Importar las rutas de configuración
 import historicoRoutes from './routes/historicoRoutes.js';
+import saludRoutes from './routes/saludRoutes.js';
 
 dotenv.config();
 
@@ -19,6 +20,7 @@ app.use('/api/empleados', authRoutes);
 app.use('/api/animales', animalRoutes);
 app.use('/api/configuracion', configRoutes); 
 app.use('/api/historicos', historicoRoutes);
+app.use('/api/salud', saludRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'API de Rancho Puerta Pesada operando al 100% 🚀' });

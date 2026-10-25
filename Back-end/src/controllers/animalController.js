@@ -1,6 +1,6 @@
+// animalController.js — Controlador de ganado con historial médico incluido y responsable en tratamientos
 import prisma from '../config/db.js';
 
-// Función auxiliar para verificar si el padre o la madre ya están en el corral seleccionado
 const verificarEndogamia = async (idCorral, idPadre, idMadre, animalIdExcluir = null) => {
   if (!idCorral) return null;
 
@@ -29,7 +29,7 @@ const verificarEndogamia = async (idCorral, idPadre, idMadre, animalIdExcluir = 
   return advertencia;
 };
 
-// Obtener todos los animales con sus relaciones completas (Corral, Tipo, Raza y Genética)
+// Obtener todos los animales con sus relaciones completas, incluyendo Historial Médico y el empleado responsable
 export const obtenerAnimales = async (req, res) => {
   try {
     const animales = await prisma.animal.findMany({
@@ -38,7 +38,17 @@ export const obtenerAnimales = async (req, res) => {
         tipoAnimal: true,
         raza: true,
         padre: { select: { idAnimal: true, areteBandera: true, nombre: true } },
-        madre: { select: { idAnimal: true, areteBandera: true, nombre: true } }
+        madre: { select: { idAnimal: true, areteBandera: true, nombre: true } },
+        tratamientos: {
+          include: {
+            controlSanitario: {
+              include: {
+                empleado: true // Incluye los datos del empleado responsable
+              }
+            }
+          },
+          orderBy: { fechaAplicacion: 'desc' }
+        }
       },
       orderBy: { idAnimal: 'desc' }
     });
@@ -48,7 +58,6 @@ export const obtenerAnimales = async (req, res) => {
   }
 };
 
-// Registrar un nuevo animal con validación de capacidad, razas, mestizos, línea genética y alerta de endogamia
 export const registrarAnimal = async (req, res) => {
   try {
     const { 
@@ -70,7 +79,6 @@ export const registrarAnimal = async (req, res) => {
 
     const corralIdNum = Number(idCorral);
 
-    // 1. Buscar el corral para verificar su capacidad máxima
     const corral = await prisma.corral.findUnique({
       where: { idCorral: corralIdNum }
     });
@@ -79,7 +87,6 @@ export const registrarAnimal = async (req, res) => {
       return res.status(404).json({ error: 'El corral seleccionado no existe.' });
     }
 
-    // 2. Contar cuántos animales activos hay actualmente en el corral
     const animalesActualesEnCorral = await prisma.animal.count({
       where: { 
         idCorral: corralIdNum,
@@ -87,24 +94,18 @@ export const registrarAnimal = async (req, res) => {
       }
     });
 
-    // 3. Validar si se supera el límite permitido
     if (animalesActualesEnCorral >= corral.capacidadMaxima) {
       return res.status(400).json({ 
         error: `El corral "${corral.nombre}" ha alcanzado su límite de capacidad (${corral.capacidadMaxima} animales).` 
       });
     }
 
-    // 4. Asegurar formato de origen
     const origenCorto = origen?.toLowerCase().includes('compra') ? 'Compra' : 'Nacimiento';
-
-    // 5. Limpieza y conversión segura de IDs
     const padreIdNum = (origenCorto === 'Nacimiento' && idPadre && idPadre !== '') ? Number(idPadre) : null;
     const madreIdNum = (origenCorto === 'Nacimiento' && idMadre && idMadre !== '') ? Number(idMadre) : null;
 
-    // 6. Verificar alerta de endogamia (parentesco en el mismo corral)
     const alertaEndogamia = await verificarEndogamia(corralIdNum, padreIdNum, madreIdNum);
 
-    // 7. Registrar el animal con sus relaciones genéticas opcionales
     const nuevoAnimal = await prisma.animal.create({
       data: {
         idCorral: corralIdNum,
@@ -136,7 +137,6 @@ export const registrarAnimal = async (req, res) => {
   }
 };
 
-// Actualizar animal (incluyendo reubicación de corral, razas, línea genética y alerta de endogamia)
 export const actualizarAnimal = async (req, res) => {
   try {
     const { id } = req.params;
@@ -195,7 +195,6 @@ export const actualizarAnimal = async (req, res) => {
     const padreIdNum = (origenCorto === 'Nacimiento' && idPadre && idPadre !== '') ? Number(idPadre) : null;
     const madreIdNum = (origenCorto === 'Nacimiento' && idMadre && idMadre !== '') ? Number(idMadre) : null;
 
-    // Verificar alerta de endogamia excluyendo al propio animal
     const alertaEndogamia = await verificarEndogamia(corralIdNum, padreIdNum, madreIdNum, animalIdNum);
 
     const animalActualizado = await prisma.animal.update({
@@ -230,7 +229,6 @@ export const actualizarAnimal = async (req, res) => {
   }
 };
 
-// Eliminar animal
 export const eliminarAnimal = async (req, res) => {
   try {
     const { id } = req.params;
@@ -243,12 +241,10 @@ export const eliminarAnimal = async (req, res) => {
   }
 };
 
-// Catálogos: Solo devuelve tipos de animal y razas que estén activos (activo: true)
 export const obtenerCatalogosAnimales = async (req, res) => {
   try {
     const corrales = await prisma.corral.findMany();
     
-    // Filtrar únicamente los tipos de animal activos y sus razas activas
     const tiposAnimal = await prisma.tipoAnimal.findMany({
       where: { activo: true },
       include: { 
