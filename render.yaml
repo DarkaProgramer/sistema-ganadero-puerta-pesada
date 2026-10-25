@@ -1,0 +1,38 @@
+# Blueprint de Render para Rancho Puerta Pesada.
+# En Render: New > Blueprint > selecciona este repositorio. Crea los dos servicios de abajo.
+# Las variables con `sync: false` se llenan a mano en el panel de Render (nunca se suben a GitHub).
+services:
+  # ── Backend (API Express + Prisma) ──────────────────────────
+  - type: web
+    name: rancho-puerta-pesada-api
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: Back-end
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+
+  # ── Frontend (React + Vite, sitio estático) ─────────────────
+  - type: web
+    name: rancho-puerta-pesada-front
+    runtime: static
+    rootDir: Front-end/rancho-app
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: VITE_API_URL
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

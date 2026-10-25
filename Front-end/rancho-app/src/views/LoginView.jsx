@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Eye, EyeOff, ShieldCheck, AlertCircle } from 'lucide-react';
 import { useRancho } from '../context/RanchoContext';
+import { API_URL } from '../config/api';
 
 export default function LoginView({ onLogin }) {
   const { ranchoConfig } = useRancho();
@@ -23,7 +24,7 @@ export default function LoginView({ onLogin }) {
     setLoading(true);
 
     try {
-      const respuesta = await fetch('http://localhost:4000/api/empleados/login', {
+      const respuesta = await fetch(`${API_URL}/api/empleados/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

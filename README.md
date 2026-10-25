@@ -9,7 +9,7 @@ Sistema web full-stack desarrollado para la administración, control y trazabili
 ### **Backend**
 * **Node.js** & **Express**: Servidor API REST de alto rendimiento.
 * **Prisma ORM**: Mapeo objeto-relacional para gestión limpia de base de datos.
-* **PostgreSQL**: Base de datos relacional robusta (alojada en **Railway**).
+* **PostgreSQL**: Base de datos relacional robusta (conexión vía `DATABASE_URL`). Despliegue en **Render**: ver `docs/DEPLOY-RENDER.md`.
 
 ### **Frontend**
 * **React**: Librería principal de interfaces de usuario.

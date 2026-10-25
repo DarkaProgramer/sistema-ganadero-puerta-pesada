@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Scale, Building2, Calendar, Plus, Edit3, Trash2, GitFork, Beef, AlertTriangle, Clock } from 'lucide-react';
 import { RegistrarPesoForm } from './forms/HistorialAnimalForm';
+import { API_URL } from '../config/api';
 
 export default function AnimalDetalleView({ animalId, onBack, showToast }) {
   const [animal, setAnimal] = useState(null);
@@ -18,7 +19,7 @@ export default function AnimalDetalleView({ animalId, onBack, showToast }) {
     async function cargarDatosDetalle() {
       try {
         // 1. Obtener datos generales del animal
-        const resAnimal = await fetch('http://localhost:4000/api/animales');
+        const resAnimal = await fetch(`${API_URL}/api/animales`);
         if (resAnimal.ok) {
           const lista = await resAnimal.json();
           const encontrado = lista.find(a => Number(a.idAnimal) === Number(animalId));
@@ -26,7 +27,7 @@ export default function AnimalDetalleView({ animalId, onBack, showToast }) {
         }
 
         // 2. Obtener historial de pesajes
-        const resHist = await fetch(`http://localhost:4000/api/historicos/animal/${animalId}`);
+        const resHist = await fetch(`${API_URL}/api/historicos/animal/${animalId}`);
         if (resHist.ok) {
           const dataHist = await resHist.json();
           if (isMounted) setHistoricos(dataHist);
@@ -47,7 +48,7 @@ export default function AnimalDetalleView({ animalId, onBack, showToast }) {
 
   const recargarDatos = async () => {
     try {
-      const resHist = await fetch(`http://localhost:4000/api/historicos/animal/${animalId}`);
+      const resHist = await fetch(`${API_URL}/api/historicos/animal/${animalId}`);
       if (resHist.ok) {
         const dataHist = await resHist.json();
         setHistoricos(dataHist);
@@ -60,8 +61,8 @@ export default function AnimalDetalleView({ animalId, onBack, showToast }) {
   const handleGuardarPeso = async (formData) => {
     try {
       const url = historicoAEditar 
-        ? `http://localhost:4000/api/historicos/${historicoAEditar.idHistorico}`
-        : `http://localhost:4000/api/historicos/animal/${animalId}`;
+        ? `${API_URL}/api/historicos/${historicoAEditar.idHistorico}`
+        : `${API_URL}/api/historicos/animal/${animalId}`;
       
       const method = historicoAEditar ? 'PUT' : 'POST';
 
@@ -91,7 +92,7 @@ export default function AnimalDetalleView({ animalId, onBack, showToast }) {
     if (!confirm('¿Estás seguro de eliminar este registro de peso?')) return;
 
     try {
-      const res = await fetch(`http://localhost:4000/api/historicos/${idHistorico}`, {
+      const res = await fetch(`${API_URL}/api/historicos/${idHistorico}`, {
         method: 'DELETE'
       });
 

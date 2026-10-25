@@ -1,6 +1,7 @@
 // src/views/PesajeMasivoView.jsx — Pantalla de captura rápida de pesaje masivo con etapa independiente
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Scale, Building2, Save } from 'lucide-react';
+import { API_URL } from '../config/api';
 
 export default function PesajeMasivoView({ onBack, showToast }) {
   const [corrales, setCorrales] = useState([]);
@@ -14,7 +15,7 @@ export default function PesajeMasivoView({ onBack, showToast }) {
   useEffect(() => {
     async function cargarCorrales() {
       try {
-        const res = await fetch('http://localhost:4000/api/animales/catalogos');
+        const res = await fetch(`${API_URL}/api/animales/catalogos`);
         if (res.ok) {
           const data = await res.json();
           setCorrales(data.corrales || []);
@@ -34,7 +35,7 @@ export default function PesajeMasivoView({ onBack, showToast }) {
 
     async function cargarAnimalesDelCorral() {
       try {
-        const res = await fetch('http://localhost:4000/api/animales');
+        const res = await fetch(`${API_URL}/api/animales`);
         if (res.ok) {
           const data = await res.json();
           const filtrados = data.filter(a => Number(a.idCorral) === Number(corralSeleccionado) && a.estado.toLowerCase() === 'vivo');
@@ -87,7 +88,7 @@ export default function PesajeMasivoView({ onBack, showToast }) {
     try {
       let exitos = 0;
       for (const reg of registros) {
-        const res = await fetch(`http://localhost:4000/api/historicos/animal/${reg.idAnimal}`, {
+        const res = await fetch(`${API_URL}/api/historicos/animal/${reg.idAnimal}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ peso: reg.peso, fecha: reg.fecha, etapa: reg.etapa })
