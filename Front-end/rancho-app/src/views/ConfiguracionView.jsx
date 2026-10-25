@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Settings, ShieldAlert, Building2, Beef, Edit3, Plus, Briefcase, Power } from 'lucide-react';
 import { GeneralConfigForm, CorralForm, TipoAnimalForm, PuestoForm } from './forms/ConfiguracionForm';
+import { API_URL } from '../config/api';
 
 export default function ConfiguracionView({ usuario, showToast }) {
   const [config, setConfig] = useState(null);
@@ -25,10 +26,10 @@ export default function ConfiguracionView({ usuario, showToast }) {
     async function cargarDatos() {
       try {
         const [resConf, resCorrales, resTipos, resPuestos] = await Promise.all([
-          fetch('http://localhost:4000/api/configuracion'),
-          fetch('http://localhost:4000/api/configuracion/corrales'),
-          fetch('http://localhost:4000/api/configuracion/tipos-animal'),
-          fetch('http://localhost:4000/api/configuracion/puestos')
+          fetch(`${API_URL}/api/configuracion`),
+          fetch(`${API_URL}/api/configuracion/corrales`),
+          fetch(`${API_URL}/api/configuracion/tipos-animal`),
+          fetch(`${API_URL}/api/configuracion/puestos`)
         ]);
 
         const dataConf = await resConf.json();
@@ -59,10 +60,10 @@ export default function ConfiguracionView({ usuario, showToast }) {
   const cargarDatosRefresco = async () => {
     try {
       const [resConf, resCorrales, resTipos, resPuestos] = await Promise.all([
-        fetch('http://localhost:4000/api/configuracion'),
-        fetch('http://localhost:4000/api/configuracion/corrales'),
-        fetch('http://localhost:4000/api/configuracion/tipos-animal'),
-        fetch('http://localhost:4000/api/configuracion/puestos')
+        fetch(`${API_URL}/api/configuracion`),
+        fetch(`${API_URL}/api/configuracion/corrales`),
+        fetch(`${API_URL}/api/configuracion/tipos-animal`),
+        fetch(`${API_URL}/api/configuracion/puestos`)
       ]);
 
       if (resConf.ok) setConfig(await resConf.json());
@@ -91,7 +92,7 @@ export default function ConfiguracionView({ usuario, showToast }) {
 
   const handleGuardarGeneral = async (formData) => {
     try {
-      const res = await fetch('http://localhost:4000/api/configuracion', {
+      const res = await fetch(`${API_URL}/api/configuracion`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -111,8 +112,8 @@ export default function ConfiguracionView({ usuario, showToast }) {
   const handleGuardarCorral = async (formData) => {
     try {
       const url = corralAEditar 
-        ? `http://localhost:4000/api/configuracion/corrales/${corralAEditar.idCorral}`
-        : 'http://localhost:4000/api/configuracion/corrales';
+        ? `${API_URL}/api/configuracion/corrales/${corralAEditar.idCorral}`
+        : `${API_URL}/api/configuracion/corrales`;
       const method = corralAEditar ? 'PUT' : 'POST';
 
       const res = await fetch(url, {
@@ -134,7 +135,7 @@ export default function ConfiguracionView({ usuario, showToast }) {
 
   const handleCrearTipo = async (formData) => {
     try {
-      const res = await fetch('http://localhost:4000/api/configuracion/tipos-animal', {
+      const res = await fetch(`${API_URL}/api/configuracion/tipos-animal`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -152,7 +153,7 @@ export default function ConfiguracionView({ usuario, showToast }) {
   // Alternar Estado Activo / Inactivo de Tipo de Ganado
   const handleToggleEstadoTipo = async (tipo) => {
     try {
-      const res = await fetch(`http://localhost:4000/api/configuracion/tipos-animal/${tipo.idTipoAnimal}`, {
+      const res = await fetch(`${API_URL}/api/configuracion/tipos-animal/${tipo.idTipoAnimal}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ activo: !tipo.activo })
@@ -169,8 +170,8 @@ export default function ConfiguracionView({ usuario, showToast }) {
   const handleGuardarPuesto = async (formData) => {
     try {
       const url = puestoAEditar 
-        ? `http://localhost:4000/api/configuracion/puestos/${puestoAEditar.idPuesto}`
-        : 'http://localhost:4000/api/configuracion/puestos';
+        ? `${API_URL}/api/configuracion/puestos/${puestoAEditar.idPuesto}`
+        : `${API_URL}/api/configuracion/puestos`;
       const method = puestoAEditar ? 'PUT' : 'POST';
 
       const res = await fetch(url, {

@@ -1,5 +1,6 @@
 // src/context/RanchoContext.jsx
 import { createContext, useContext, useState, useEffect } from 'react';
+import { API_URL } from '../config/api';
 
 const RanchoContext = createContext();
 
@@ -13,7 +14,7 @@ export function RanchoProvider({ children }) {
 
   const fetchConfiguracionGlobal = async () => {
     try {
-      const res = await fetch('http://localhost:4000/api/configuracion');
+      const res = await fetch(`${API_URL}/api/configuracion`);
       if (res.ok) {
         const data = await res.json();
         setRanchoConfig({
@@ -33,7 +34,7 @@ export function RanchoProvider({ children }) {
 
     async function cargarDatosIniciales() {
       try {
-        const res = await fetch('http://localhost:4000/api/configuracion');
+        const res = await fetch(`${API_URL}/api/configuracion`);
         if (res.ok) {
           const data = await res.json();
           if (isMounted) {

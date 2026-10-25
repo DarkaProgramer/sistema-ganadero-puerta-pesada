@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Users, UserPlus, Trash2, Edit3, Shield, User, Mail, Phone, Briefcase, AlertCircle } from 'lucide-react';
 import EmpleadoForm from './forms/EmpleadoForm';
+import { API_URL } from '../config/api';
 
 export default function EmpleadosView() {
   const [empleados, setEmpleados] = useState([]);
@@ -17,8 +18,8 @@ export default function EmpleadosView() {
     async function cargarDatosEmpleados() {
       try {
         const [resEmp, resPuestos] = await Promise.all([
-          fetch('http://localhost:4000/api/empleados'),
-          fetch('http://localhost:4000/api/configuracion/puestos')
+          fetch(`${API_URL}/api/empleados`),
+          fetch(`${API_URL}/api/configuracion/puestos`)
         ]);
         
         const dataEmp = await resEmp.json();
@@ -45,8 +46,8 @@ export default function EmpleadosView() {
   const refrescarDatos = async () => {
     try {
       const [resEmp, resPuestos] = await Promise.all([
-        fetch('http://localhost:4000/api/empleados'),
-        fetch('http://localhost:4000/api/configuracion/puestos')
+        fetch(`${API_URL}/api/empleados`),
+        fetch(`${API_URL}/api/configuracion/puestos`)
       ]);
       if (resEmp.ok) setEmpleados(await resEmp.json());
       if (resPuestos.ok) setPuestos(await resPuestos.json());
@@ -58,8 +59,8 @@ export default function EmpleadosView() {
   const handleGuardarEmpleado = async (formData) => {
     try {
       const url = empleadoSeleccionado 
-        ? `http://localhost:4000/api/empleados/${empleadoSeleccionado.idEmpleado}`
-        : 'http://localhost:4000/api/empleados/registro';
+        ? `${API_URL}/api/empleados/${empleadoSeleccionado.idEmpleado}`
+        : `${API_URL}/api/empleados/registro`;
       
       const method = empleadoSeleccionado ? 'PUT' : 'POST';
 
@@ -91,7 +92,7 @@ export default function EmpleadosView() {
   const handleEliminar = async (id) => {
     if (!confirm('¿Estás seguro de eliminar este empleado del sistema?')) return;
     try {
-      const res = await fetch(`http://localhost:4000/api/empleados/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_URL}/api/empleados/${id}`, { method: 'DELETE' });
       if (res.ok) await refrescarDatos();
     } catch {
       alert('Error de red al eliminar.');

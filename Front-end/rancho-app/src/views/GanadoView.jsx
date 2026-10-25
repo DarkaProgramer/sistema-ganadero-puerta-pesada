@@ -6,6 +6,7 @@ import Badge from '../components/ui/Badge';
 import AnimalForm from './forms/AnimalForm';
 import AnimalDetalleView from './AnimalDetalleView';
 import PesajeMasivoView from './PesajeMasivoView';
+import { API_URL } from '../config/api';
 
 const ESTADOS = ['Vivo', 'Vendido', 'Muerto'];
 
@@ -36,8 +37,8 @@ export default function GanadoView({ showToast }) {
     const cargarDatos = async () => {
       try {
         const [resAnimales, resCatalogos] = await Promise.all([
-          fetch('http://localhost:4000/api/animales'),
-          fetch('http://localhost:4000/api/animales/catalogos')
+          fetch(`${API_URL}/api/animales`),
+          fetch(`${API_URL}/api/animales/catalogos`)
         ]);
 
         const dataAnimales = await resAnimales.json();
@@ -64,7 +65,7 @@ export default function GanadoView({ showToast }) {
 
   const recargarDatos = async () => {
     try {
-      const res = await fetch('http://localhost:4000/api/animales');
+      const res = await fetch(`${API_URL}/api/animales`);
       const data = await res.json();
       if (res.ok) setAnimales(data);
     } catch (err) {
@@ -91,8 +92,8 @@ export default function GanadoView({ showToast }) {
   const handleGuardar = async (formData) => {
     try {
       const url = animalSeleccionado 
-        ? `http://localhost:4000/api/animales/${animalSeleccionado.idAnimal}`
-        : 'http://localhost:4000/api/animales/registro';
+        ? `${API_URL}/api/animales/${animalSeleccionado.idAnimal}`
+        : `${API_URL}/api/animales/registro`;
       
       const method = animalSeleccionado ? 'PUT' : 'POST';
 
@@ -130,7 +131,7 @@ export default function GanadoView({ showToast }) {
   const handleEliminar = async (id, arete) => {
     if (!confirm(`¿Estás seguro de eliminar el registro del animal con arete ${arete}?`)) return;
     try {
-      const res = await fetch(`http://localhost:4000/api/animales/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_URL}/api/animales/${id}`, { method: 'DELETE' });
       if (res.ok) {
         recargarDatos();
         showToast({ message: `Animal ${arete} eliminado del sistema.`, type: 'info' });
