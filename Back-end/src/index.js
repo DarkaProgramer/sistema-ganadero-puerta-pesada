@@ -10,7 +10,11 @@ import saludRoutes from './routes/saludRoutes.js';
 dotenv.config();
 
 const app = express();
-app.use(cors());
+// CORS: si CORS_ORIGIN está definido (ej. la URL del front en Render) solo se permiten esos dominios
+const origenesPermitidos = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map(o => o.trim()).filter(Boolean)
+  : null;
+app.use(cors(origenesPermitidos ? { origin: origenesPermitidos } : {}));
 app.use(express.json());
 
 const PORT = process.env.PORT || 4000;
@@ -24,6 +28,11 @@ app.use('/api/salud', saludRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'API de Rancho Puerta Pesada operando al 100% 🚀' });
+});
+
+// Health check usado por Render para saber si el servicio está vivo
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok' });
 });
 
 app.listen(PORT, () => {
