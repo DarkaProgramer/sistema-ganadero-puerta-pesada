@@ -1,32 +1,34 @@
-// src/views/AnimalDetalleView.jsx — Ficha de trazabilidad, Línea Genética y Cuenta Regresiva de Destete (6 meses)
+// src/views/AnimalDetalleView.jsx — Ficha de trazabilidad: destete (6 meses), línea genética, historial médico y pesajes
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Scale, Building2, Calendar, Plus, Edit3, Trash2, GitFork, Beef, AlertTriangle, Clock } from 'lucide-react';
+import { ArrowLeft, Scale, Building2, Calendar, Plus, Edit3, Trash2, Syringe, Eye, User, GitFork, Beef, AlertTriangle, Clock } from 'lucide-react';
 import { RegistrarPesoForm } from './forms/HistorialAnimalForm';
+import { API_URL } from '../config/api';
 
 export default function AnimalDetalleView({ animalId, onBack, showToast }) {
   const [animal, setAnimal] = useState(null);
   const [historicos, setHistoricos] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // Estados para modales de peso individual
+  // Estados para modales
   const [modalPesoOpen, setModalPesoOpen] = useState(false);
   const [historicoAEditar, setHistoricoAEditar] = useState(null);
+  
+  // Estado solo para ver el detalle médico de un tratamiento
+  const [tratamientoSeleccionado, setTratamientoSeleccionado] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
 
     async function cargarDatosDetalle() {
       try {
-        // 1. Obtener datos generales del animal
-        const resAnimal = await fetch('http://localhost:4000/api/animales');
+        const resAnimal = await fetch(`${API_URL}/api/animales`);
         if (resAnimal.ok) {
           const lista = await resAnimal.json();
           const encontrado = lista.find(a => Number(a.idAnimal) === Number(animalId));
           if (isMounted) setAnimal(encontrado);
         }
 
-        // 2. Obtener historial de pesajes
-        const resHist = await fetch(`http://localhost:4000/api/historicos/animal/${animalId}`);
+        const resHist = await fetch(`${API_URL}/api/historicos/animal/${animalId}`);
         if (resHist.ok) {
           const dataHist = await resHist.json();
           if (isMounted) setHistoricos(dataHist);
@@ -39,29 +41,14 @@ export default function AnimalDetalleView({ animalId, onBack, showToast }) {
     }
 
     cargarDatosDetalle();
-
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, [animalId]);
-
-  const recargarDatos = async () => {
-    try {
-      const resHist = await fetch(`http://localhost:4000/api/historicos/animal/${animalId}`);
-      if (resHist.ok) {
-        const dataHist = await resHist.json();
-        setHistoricos(dataHist);
-      }
-    } catch (err) {
-      console.error('Error al recargar historicos:', err);
-    }
-  };
 
   const handleGuardarPeso = async (formData) => {
     try {
       const url = historicoAEditar 
-        ? `http://localhost:4000/api/historicos/${historicoAEditar.idHistorico}`
-        : `http://localhost:4000/api/historicos/animal/${animalId}`;
+        ? `${API_URL}/api/historicos/${historicoAEditar.idHistorico}`
+        : `${API_URL}/api/historicos/animal/${animalId}`;
       
       const method = historicoAEditar ? 'PUT' : 'POST';
 
@@ -74,13 +61,9 @@ export default function AnimalDetalleView({ animalId, onBack, showToast }) {
       if (res.ok) {
         setModalPesoOpen(false);
         setHistoricoAEditar(null);
-        await recargarDatos();
-        showToast({ 
-          message: historicoAEditar ? 'Pesaje actualizado con éxito.' : 'Pesaje registrado con éxito.', 
-          type: 'success' 
-        });
-      } else {
-        showToast({ message: 'Error al procesar el pesaje.', type: 'error' });
+        const resHist = await fetch(`${API_URL}/api/historicos/animal/${animalId}`);
+        if (resHist.ok) setHistoricos(await resHist.json());
+        showToast({ message: 'Pesaje guardado con éxito.', type: 'success' });
       }
     } catch {
       showToast({ message: 'Error de red.', type: 'error' });
@@ -89,17 +72,12 @@ export default function AnimalDetalleView({ animalId, onBack, showToast }) {
 
   const handleEliminarPeso = async (idHistorico) => {
     if (!confirm('¿Estás seguro de eliminar este registro de peso?')) return;
-
     try {
-      const res = await fetch(`http://localhost:4000/api/historicos/${idHistorico}`, {
-        method: 'DELETE'
-      });
-
+      const res = await fetch(`${API_URL}/api/historicos/${idHistorico}`, { method: 'DELETE' });
       if (res.ok) {
-        await recargarDatos();
-        showToast({ message: 'Registro de peso eliminado.', type: 'success' });
-      } else {
-        showToast({ message: 'Error al eliminar.', type: 'error' });
+        const resHist = await fetch(`${API_URL}/api/historicos/animal/${animalId}`);
+        if (resHist.ok) setHistoricos(await resHist.json());
+        showToast({ message: 'Pesaje eliminado.', type: 'success' });
       }
     } catch {
       showToast({ message: 'Error de red.', type: 'error' });
@@ -131,7 +109,6 @@ export default function AnimalDetalleView({ animalId, onBack, showToast }) {
 
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8">
-      {/* Botón regresar */}
       <button
         onClick={onBack}
         className="flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-emerald-600 transition"
@@ -193,6 +170,7 @@ export default function AnimalDetalleView({ animalId, onBack, showToast }) {
         </div>
       )}
 
+
       {/* Grid de Datos Técnicos */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
@@ -204,14 +182,12 @@ export default function AnimalDetalleView({ animalId, onBack, showToast }) {
         <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Raza / Género</p>
           <p className="text-base font-bold text-slate-800 mt-1">
-            {animal.raza?.nombre || 'N/D'} {animal.detalleMestizo ? `(${animal.detalleMestizo})` : ''} • <span className="text-emerald-700 font-medium">{animal.genero}</span>
+            {animal.raza?.nombre || 'N/D'} <span className="text-emerald-700 font-medium">({animal.genero})</span>
           </p>
         </div>
         <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Origen</p>
-          <p className="text-base font-bold text-slate-800 mt-1">
-            {animal.origen}
-          </p>
+          <p className="text-base font-bold text-slate-800 mt-1">{animal.origen}</p>
         </div>
         <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha de Ingreso</p>
@@ -278,6 +254,76 @@ export default function AnimalDetalleView({ animalId, onBack, showToast }) {
         </div>
       </div>
 
+
+      {/* Historial Médico y Sanitario */}
+      <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
+        <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-6">
+          <Syringe size={20} className="text-emerald-600" /> Historial Médico y Sanitario ({animal.tratamientos?.length || 0})
+        </h3>
+
+        {!animal.tratamientos || animal.tratamientos.length === 0 ? (
+          <p className="text-center py-8 text-slate-400 text-sm bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+            Este animal no cuenta con registros médicos o de vacunación aplicados aún.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-100 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  <th className="py-3 px-4">Fecha / Tipo</th>
+                  <th className="py-3 px-4">Producto / Dosis</th>
+                  <th className="py-3 px-4">Responsable / Apoyo</th>
+                  <th className="py-3 px-4">Observación Individual</th>
+                  <th className="py-3 px-4 text-right">Acción</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-sm text-slate-600">
+                {animal.tratamientos.map((t) => (
+                  <tr key={t.idTratamiento} className="hover:bg-slate-50/50 transition">
+                    <td className="py-3 px-4 font-medium text-slate-800">
+                      <div className="flex items-center gap-1.5">
+                        <Calendar size={13} className="text-emerald-600 flex-shrink-0" />
+                        <span>{new Date(t.fechaAplicacion || t.controlSanitario?.fecha).toLocaleDateString()}</span>
+                      </div>
+                      <span className="inline-block mt-1 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
+                        {t.controlSanitario?.tipo || 'Tratamiento'}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="font-medium text-slate-800">{t.controlSanitario?.producto || 'N/D'}</div>
+                      {t.controlSanitario?.dosis && (
+                        <span className="text-xs text-slate-400">Dosis: {t.controlSanitario.dosis}</span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-1.5 text-slate-700 text-xs">
+                        <User size={13} className="text-slate-400" />
+                        <span>{t.controlSanitario?.empleado?.nombreCompleto || 'Responsable N/D'}</span>
+                      </div>
+                      {t.controlSanitario?.ayudantes && (
+                        <span className="block text-[11px] text-slate-400 mt-0.5">Apoyo: {t.controlSanitario.ayudantes}</span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 text-xs text-slate-500">
+                      {t.observaciones || 'Sin observaciones individuales'}
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <button
+                        onClick={() => setTratamientoSeleccionado(t)}
+                        className="p-2 bg-slate-50 hover:bg-emerald-50 text-slate-600 hover:text-emerald-600 rounded-xl border border-slate-200 transition inline-flex items-center justify-center"
+                        title="Ver detalle del evento"
+                      >
+                        <Eye size={15} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
       {/* Historial de Pesos en Detalle */}
       <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
         <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-6">
@@ -322,6 +368,53 @@ export default function AnimalDetalleView({ animalId, onBack, showToast }) {
           )}
         </div>
       </div>
+
+      {/* Modal Solo Lectura para Ver Detalle del Evento Sanitario */}
+      {tratamientoSeleccionado && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl shadow-xl max-w-md w-full p-6 space-y-4">
+            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
+              <Syringe className="text-emerald-600" /> Detalle del Evento Sanitario
+            </h3>
+            
+            <div className="space-y-3 text-sm text-slate-600 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+              <p><strong>Tipo de Evento:</strong> {tratamientoSeleccionado.controlSanitario?.tipo}</p>
+              <p><strong>Producto / Medicamento:</strong> {tratamientoSeleccionado.controlSanitario?.producto}</p>
+              <p><strong>Dosis:</strong> {tratamientoSeleccionado.controlSanitario?.dosis || 'N/D'}</p>
+              <p><strong>Responsable:</strong> {tratamientoSeleccionado.controlSanitario?.empleado?.nombreCompleto || 'N/D'}</p>
+              {tratamientoSeleccionado.controlSanitario?.ayudantes && (
+                <p><strong>Apoyo:</strong> {tratamientoSeleccionado.controlSanitario.ayudantes}</p>
+              )}
+              <p><strong>Fecha:</strong> {new Date(tratamientoSeleccionado.fechaAplicacion || tratamientoSeleccionado.controlSanitario?.fecha).toLocaleDateString()}</p>
+              <p><strong>Estado:</strong> <span className="text-emerald-700 font-semibold">{tratamientoSeleccionado.estado}</span></p>
+              
+              {tratamientoSeleccionado.observaciones && (
+                <div className="pt-2 border-t border-slate-200">
+                  <strong className="block text-xs uppercase text-slate-400">Observación Individual:</strong>
+                  <p className="text-slate-700 mt-0.5">{tratamientoSeleccionado.observaciones}</p>
+                </div>
+              )}
+
+              {tratamientoSeleccionado.controlSanitario?.observaciones && (
+                <div className="pt-2 border-t border-slate-200">
+                  <strong className="block text-xs uppercase text-slate-400">Nota General de Campaña:</strong>
+                  <p className="text-slate-700 mt-0.5">{tratamientoSeleccionado.controlSanitario.observaciones}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => setTratamientoSeleccionado(null)}
+                className="px-5 py-2.5 bg-slate-800 text-white rounded-xl text-sm font-medium hover:bg-slate-900 transition"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal Registrar / Editar Peso */}
       {modalPesoOpen && (

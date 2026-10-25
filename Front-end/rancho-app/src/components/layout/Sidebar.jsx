@@ -5,17 +5,17 @@ import {
   ChevronRight, Settings, LogOut,
 } from 'lucide-react';
 import { useState } from 'react';
-import { useRancho } from '../../context/RanchoContext'; // Ajusta la ruta si es necesario según tu estructura de carpetas
+import { useRancho } from '../../context/RanchoContext';
 
 const NAV_ITEMS = [
-  { id: 'dashboard',   label: 'Inicio',       icon: LayoutDashboard },
-  { id: 'empleados',   label: 'Empleados',    icon: Users           },
-  { id: 'ganado',      label: 'Ganado',       icon: Beef            },
-  { id: 'ventas',      label: 'Ventas',       icon: TrendingUp      },
-  { id: 'vacunacion',  label: 'Vacunación',   icon: Syringe         },
-  { id: 'inventario',  label: 'Inventario',   icon: Package         },
-  { id: 'clientes',    label: 'Clientes',     icon: Users           },
-  { id: 'calendario',  label: 'Calendario',   icon: CalendarDays    },
+  { id: 'dashboard',    label: 'Inicio',       icon: LayoutDashboard },
+  { id: 'empleados',    label: 'Empleados',    icon: Users           },
+  { id: 'ganado',       label: 'Ganado',       icon: Beef            },
+  { id: 'ventas',       label: 'Ventas',       icon: TrendingUp      },
+  { id: 'salud',        label: 'Salud',        icon: Syringe         }, // <-- Renombrado a Salud
+  { id: 'inventario',   label: 'Inventario',   icon: Package         },
+  { id: 'clientes',     label: 'Clientes',     icon: Users           },
+  { id: 'calendario',   label: 'Calendario',   icon: CalendarDays    },
 ];
 
 export default function Sidebar({ activeView, setActiveView, collapsed, setCollapsed, onLogout }) {

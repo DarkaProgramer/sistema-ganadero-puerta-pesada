@@ -16,7 +16,7 @@ import LoginView        from './views/LoginView';
 import DashboardView    from './views/DashboardView';
 import GanadoView       from './views/GanadoView';
 import VentasView       from './views/VentasView';
-import VacunacionView   from './views/VacunacionView';
+import SaludView        from './views/SaludView';        // <-- Importamos SaludView
 import InventarioView   from './views/InventarioView';
 import ClientesView     from './views/ClientesView';
 import CalendarioView   from './views/CalendarioView';
@@ -28,7 +28,7 @@ const VIEWS = {
   dashboard:     DashboardView,
   ganado:        GanadoView,
   ventas:        VentasView,
-  vacunacion:    VacunacionView,
+  salud:         SaludView,     // <-- Actualizado de vacunacion a salud
   inventario:    InventarioView,
   clientes:      ClientesView,
   calendario:    CalendarioView,

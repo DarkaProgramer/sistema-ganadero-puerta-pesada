@@ -7,6 +7,7 @@ const VIEW_TITLES = {
   ganado:        'Gestión de Ganado',
   ventas:        'Registro de Ventas',
   vacunacion:    'Control de Vacunación',
+  salud:         'Salud y Control Sanitario',
   inventario:    'Inventario',
   clientes:      'Clientes y Cuentas por Cobrar',
   calendario:    'Calendario y Eventos',
