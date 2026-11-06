@@ -2,7 +2,7 @@
 import {
   LayoutDashboard, Beef, TrendingUp, Syringe,
   Package, Users, CalendarDays, ChevronLeft,
-  ChevronRight, Settings, LogOut,
+  ChevronRight, Settings, LogOut, Siren, Bell, Sprout,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useRancho } from '../../context/RanchoContext';
@@ -16,6 +16,9 @@ const NAV_ITEMS = [
   { id: 'inventario',   label: 'Inventario',   icon: Package         },
   { id: 'clientes',     label: 'Clientes',     icon: Users           },
   { id: 'calendario',   label: 'Calendario',   icon: CalendarDays    },
+  { id: 'incidencias',  label: 'Reportes',     icon: Siren           },
+  { id: 'notificaciones', label: 'Notificaciones', icon: Bell        },
+  { id: 'etapas',       label: 'Etapas',       icon: Sprout          },
 ];
 
 export default function Sidebar({ activeView, setActiveView, collapsed, setCollapsed, onLogout }) {

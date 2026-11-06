@@ -46,7 +46,7 @@ export default function PesajeMasivoView({ onBack, showToast }) {
           const inicialEtapas = {};
           filtrados.forEach(a => { 
             inicialPesos[a.idAnimal] = ''; 
-            inicialEtapas[a.idAnimal] = 'Engorda'; 
+            inicialEtapas[a.idAnimal] = 'Auto'; // Tarjeta 7: etapa calculada según la edad 
           });
           setPesos(inicialPesos);
           setEtapas(inicialEtapas);
@@ -76,7 +76,7 @@ export default function PesajeMasivoView({ onBack, showToast }) {
         idAnimal: Number(idAnimal),
         peso: Number(peso),
         fecha: fecha,
-        etapa: etapas[idAnimal] || 'Engorda'
+        etapa: etapas[idAnimal] || 'Auto'
       }));
 
     if (registros.length === 0) {
@@ -195,10 +195,11 @@ export default function PesajeMasivoView({ onBack, showToast }) {
                       {/* Selector de Etapa por Animal */}
                       <td className="px-6 py-3">
                         <select
-                          value={etapas[animal.idAnimal] || 'Engorda'}
+                          value={etapas[animal.idAnimal] || 'Auto'}
                           onChange={e => handleEtapaChange(animal.idAnimal, e.target.value)}
                           className="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-medium bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none text-slate-700"
                         >
+                          <option value="Auto">Automática</option>
                           <option value="Crecimiento">Crecimiento</option>
                           <option value="Engorda">Engorda</option>
                           <option value="Reproduccion">Reproducción</option>

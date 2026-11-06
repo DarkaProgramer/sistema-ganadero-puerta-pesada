@@ -22,6 +22,9 @@ import ClientesView     from './views/ClientesView';
 import CalendarioView   from './views/CalendarioView';
 import EmpleadosView    from './views/EmpleadosView';
 import ConfiguracionView from './views/ConfiguracionView';
+import IncidenciasView   from './views/IncidenciasView';     // Tarjeta 5
+import NotificacionesView from './views/NotificacionesView'; // Tarjeta 6
+import EtapasConfigView  from './views/EtapasConfigView';    // Tarjeta 7
 
 // ─── Mapa de vistas ───────────────────────────────────────────
 const VIEWS = {
@@ -34,6 +37,9 @@ const VIEWS = {
   calendario:    CalendarioView,
   empleados:     EmpleadosView,
   configuracion: ConfiguracionView,
+  incidencias:    IncidenciasView,
+  notificaciones: NotificacionesView,
+  etapas:         EtapasConfigView,
 };
 
 export default function App() {
@@ -80,6 +86,7 @@ export default function App() {
               userName={user?.nombre}
               userRole={user?.rol}
               onToggleSidebar={() => setSidebarCollapsed(c => !c)}
+              setActiveView={setActiveView}
               alertCount={3}
             />
 

@@ -45,6 +45,15 @@ model Empleado {
   reportes               Reporte[]
   movimientosFinancieros MovimientoFinanciero[]
 
+  // ── Expediente de RR.HH. (Tarjeta 1) ──
+  estatus                String    @default("Activo") @db.VarChar(20) // 'Activo', 'Inactivo', 'Vacaciones'
+  fechaContratacion      DateTime? @db.Date
+  direccion              String?   @db.VarChar(200)
+  contactoEmergencia     String?   @db.VarChar(150)
+  notas                  String?   @db.Text
+  asignacionesCorral     AsignacionCorral[]
+  transacciones          Transaccion[]
+
   @@map("empleados")
 }
 
@@ -56,6 +65,7 @@ model TipoAnimal {
   animales     Animal[]
   razas        Raza[]
   usos         UsoAnimal[]
+  etapas       EtapaDesarrollo[]
 
   @@map("tipo_animal")
 }
@@ -90,6 +100,7 @@ model Corral {
 
   animales             Animal[]
   controlesSanitarios  ControlSanitario[]
+  asignaciones         AsignacionCorral[]
 
   @@map("corrales")
 }
@@ -131,6 +142,7 @@ model Animal {
   historicos      HistoricoAnimal[]
   tratamientos    TratamientoAnimal[]
   ventasAnimales  VentaAnimal[]
+  detallesTransaccion TransaccionDetalle[]
 
   @@map("animales")
 }
@@ -157,6 +169,15 @@ model Evento {
   estado      String    @db.VarChar(20)
 
   empleado    Empleado  @relation(fields: [idEmpleado], references: [idEmpleado])
+
+  // ── Agenda inteligente (Tarjeta 4) ──
+  titulo          String?   @db.VarChar(120)
+  recurrencia     String    @default("Ninguna") @db.VarChar(15) // 'Ninguna', 'Semanal', 'Mensual'
+  diasSemana      String?   @db.VarChar(20)  // "6" = sábado, "1,3" = lunes y miércoles (0 = domingo)
+  fechaFin        DateTime? @db.Date
+  notificarCorreo Boolean   @default(false)
+  correoDestino   String?   @db.VarChar(255)
+  ultimoEnvio     DateTime? @db.Timestamp(6)
 
   @@map("eventos")
 }
@@ -201,6 +222,7 @@ model Cliente {
   correo     String? @db.VarChar(100)
 
   ventas     Venta[]
+  transacciones Transaccion[]
 
   @@map("clientes")
 }
@@ -240,6 +262,14 @@ model Inventario {
 
   movimientos    MovimientoInventario[]
 
+  // ── Inventario diferenciado (Tarjeta 2) ──
+  tipo           String  @default("Consumible") @db.VarChar(15) // 'Herramienta', 'Consumible'
+  stockCritico   Int     @default(0)  // Umbral rojo; stockMinimo es el umbral amarillo
+  ubicacion      String? @db.VarChar(100)
+  descripcion    String? @db.Text
+  activo         Boolean @default(true)
+  detallesTransaccion TransaccionDetalle[]
+
   @@map("inventario")
 }
 
@@ -252,6 +282,10 @@ model MovimientoInventario {
   fecha          DateTime @db.Date
 
   inventario     Inventario @relation(fields: [idInventario], references: [idInventario])
+
+  motivo          String?   @db.VarChar(200)
+  estadoPrestamo  String?   @db.VarChar(15) // 'Prestado', 'Devuelto' (solo herramientas)
+  fechaDevolucion DateTime? @db.Date
   empleado       Empleado   @relation(fields: [idEmpleado], references: [idEmpleado])
 
   @@map("movimiento_inventario")
@@ -277,6 +311,15 @@ model Reporte {
   descripcion          String   @db.Text
   fecha                DateTime @default(now()) @db.Timestamp(6)
 
+  // ── Incidencias (Tarjeta 5) ──
+  tipoIncidencia       String    @default("Aviso general") @db.VarChar(40) // 'Animal lesionado', 'Daño en vehículo/maquinaria', 'Aviso general'
+  prioridad            String    @default("Media") @db.VarChar(10)
+  estado               String    @default("Pendiente") @db.VarChar(15) // 'Pendiente', 'En revisión', 'Atendido', 'Descartado'
+  fotoUrl              String?   @db.Text // Imagen en base64 (data URL)
+  respuesta            String?   @db.Text
+  atendidoPor          String?   @db.VarChar(150)
+  fechaAtencion        DateTime? @db.Timestamp(6)
+
   empleado             Empleado @relation(fields: [idEmpleado], references: [idEmpleado])
 
   @@map("reportes")
@@ -294,4 +337,105 @@ model MovimientoFinanciero {
   empleado     Empleado @relation(fields: [idEmpleado], references: [idEmpleado])
 
   @@map("movimiento_financiero")
+}
+
+// ════════════════════════ MODELOS NUEVOS ════════════════════════
+
+// Tarjeta 1 — Corrales/responsabilidades asignadas a un empleado
+model AsignacionCorral {
+  idAsignacion    Int      @id @default(autoincrement())
+  idEmpleado      Int
+  idCorral        Int
+  responsabilidad String?  @db.VarChar(100)
+  fechaAsignacion DateTime @default(now()) @db.Date
+
+  empleado        Empleado @relation(fields: [idEmpleado], references: [idEmpleado], onDelete: Cascade)
+  corral          Corral   @relation(fields: [idCorral], references: [idCorral], onDelete: Cascade)
+
+  @@unique([idEmpleado, idCorral])
+  @@map("asignacion_corral")
+}
+
+// Tarjeta 3 — Proveedores para compras
+model Proveedor {
+  idProveedor   Int     @id @default(autoincrement())
+  nombre        String  @db.VarChar(100)
+  telefono      String? @db.VarChar(15)
+  correo        String? @db.VarChar(100)
+
+  transacciones Transaccion[]
+
+  @@map("proveedores")
+}
+
+// Tarjeta 3 — Transacción comercial (compra o venta)
+model Transaccion {
+  idTransaccion Int      @id @default(autoincrement())
+  folio         String   @unique @db.VarChar(20)
+  tipo          String   @db.VarChar(10) // 'Compra', 'Venta'
+  idCliente     Int?
+  idProveedor   Int?
+  idEmpleado    Int?     // Quién la registró
+  fecha         DateTime @db.Date
+  total         Decimal  @db.Decimal(12, 2)
+  estado        String   @default("Pagado") @db.VarChar(15) // 'Pagado', 'Pendiente', 'Cancelado'
+  metodoPago    String?  @db.VarChar(20)
+  notas         String?  @db.Text
+  creadoEn      DateTime @default(now()) @db.Timestamp(6)
+
+  cliente       Cliente?   @relation(fields: [idCliente], references: [idClient])
+  proveedor     Proveedor? @relation(fields: [idProveedor], references: [idProveedor])
+  empleado      Empleado?  @relation(fields: [idEmpleado], references: [idEmpleado], onDelete: SetNull)
+  detalles      TransaccionDetalle[]
+
+  @@map("transacciones")
+}
+
+model TransaccionDetalle {
+  idDetalle      Int     @id @default(autoincrement())
+  idTransaccion  Int
+  concepto       String  @db.VarChar(15) // 'Animal', 'Insumo', 'Herramienta', 'Otro'
+  descripcion    String  @db.VarChar(200)
+  idAnimal       Int?
+  idInventario   Int?
+  cantidad       Int     @default(1)
+  precioUnitario Decimal @db.Decimal(12, 2)
+  subtotal       Decimal @db.Decimal(12, 2)
+
+  transaccion    Transaccion @relation(fields: [idTransaccion], references: [idTransaccion], onDelete: Cascade)
+  animal         Animal?     @relation(fields: [idAnimal], references: [idAnimal], onDelete: SetNull)
+  inventario     Inventario? @relation(fields: [idInventario], references: [idInventario], onDelete: SetNull)
+
+  @@map("transaccion_detalle")
+}
+
+// Tarjeta 6 — Centro de notificaciones
+model Notificacion {
+  idNotificacion Int      @id @default(autoincrement())
+  clave          String   @unique @db.VarChar(120) // Evita duplicar la misma alerta (ej. "stock-5-critico")
+  tipo           String   @db.VarChar(20) // 'Endogamia', 'Stock', 'Evento', 'Incidencia', 'Etapa'
+  severidad      String   @default("info") @db.VarChar(10) // 'info', 'aviso', 'critico'
+  titulo         String   @db.VarChar(150)
+  mensaje        String   @db.Text
+  vista          String?  @db.VarChar(30) // Vista del front a la que lleva
+  leida          Boolean  @default(false)
+  eliminada      Boolean  @default(false) // Borrado lógico: no se vuelve a generar
+  fecha          DateTime @default(now()) @db.Timestamp(6)
+
+  @@map("notificaciones")
+}
+
+// Tarjeta 7 — Etapas de desarrollo configurables por tipo de animal
+model EtapaDesarrollo {
+  idEtapa      Int        @id @default(autoincrement())
+  idTipoAnimal Int
+  nombre       String     @db.VarChar(30)
+  mesInicio    Int        // Edad en meses en que inicia (inclusive)
+  mesFin       Int?       // Edad en meses en que termina (exclusivo). null = sin límite
+  orden        Int        @default(0)
+  color        String     @default("emerald") @db.VarChar(15)
+
+  tipoAnimal   TipoAnimal @relation(fields: [idTipoAnimal], references: [idTipoAnimal], onDelete: Cascade)
+
+  @@map("etapas_desarrollo")
 }

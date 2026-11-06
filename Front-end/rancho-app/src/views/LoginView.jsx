@@ -37,6 +37,7 @@ export default function LoginView({ onLogin }) {
 
       if (respuesta.ok) {
         onLogin({ 
+          idEmpleado: datos.empleado.idEmpleado, // Necesario para incidencias, movimientos y transacciones
           nombre: datos.empleado.nombreCompleto, 
           rol: datos.empleado.rol.toLowerCase() 
         });

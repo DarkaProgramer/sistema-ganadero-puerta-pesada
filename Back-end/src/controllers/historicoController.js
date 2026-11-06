@@ -1,5 +1,13 @@
 // Back-end/src/controllers/historicoController.js — CRUD completo para Historiales de Peso
 import prisma from '../config/db.js';
+import { calcularEtapaDeAnimal } from '../utils/etapas.js';
+
+// Tarjeta 7: si no llega etapa (o llega 'Auto') se calcula según la edad y la especie del animal
+const resolverEtapa = async (idAnimal, etapa) => {
+  if (etapa && etapa !== 'Auto') return etapa;
+  const info = await calcularEtapaDeAnimal(idAnimal);
+  return info?.etapa.nombre || 'Engorda';
+};
 
 // 1. OBTENER: Todos los historicos de pesaje de un animal específico (para su ficha de detalle)
 export const obtenerHistoricosPorAnimal = async (req, res) => {
@@ -26,7 +34,7 @@ export const registrarHistoricoIndividual = async (req, res) => {
         idAnimal: Number(id),
         fecha: fecha ? new Date(fecha) : new Date(),
         peso: Number(peso),
-        etapa: etapa || 'Engorda'
+        etapa: await resolverEtapa(id, etapa)
       }
     });
 
@@ -48,12 +56,12 @@ export const registrarPesajeMasivo = async (req, res) => {
 
     const fechaObj = fecha ? new Date(fecha) : new Date();
 
-    const datosASubir = registros.map(item => ({
+    const datosASubir = await Promise.all(registros.map(async item => ({
       idAnimal: Number(item.idAnimal),
       fecha: fechaObj,
       peso: Number(item.peso),
-      etapa: etapa || 'Engorda'
-    }));
+      etapa: await resolverEtapa(item.idAnimal, item.etapa || etapa)
+    })));
 
     const resultado = await prisma.historicoAnimal.createMany({
       data: datosASubir,

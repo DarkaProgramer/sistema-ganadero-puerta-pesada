@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft, Scale, Building2, Calendar, Plus, Edit3, Trash2, Syringe, Eye, User, GitFork, Beef, AlertTriangle, Clock } from 'lucide-react';
 import { RegistrarPesoForm } from './forms/HistorialAnimalForm';
 import { API_URL } from '../config/api';
+import EtapaIndicador from '../components/ui/EtapaIndicador'; // Tarjeta 7
 
 export default function AnimalDetalleView({ animalId, onBack, showToast }) {
   const [animal, setAnimal] = useState(null);
@@ -144,6 +145,9 @@ export default function AnimalDetalleView({ animalId, onBack, showToast }) {
           <Plus size={16} /> Registrar Pesaje
         </button>
       </div>
+
+      {/* Etapa de desarrollo calculada automáticamente según especie y edad (Tarjeta 7) */}
+      <EtapaIndicador idAnimal={animal.idAnimal} fechaNacimiento={animal.fechaNacimiento} />
 
       {/* Alerta Visual de Destete / Cambio de Corral (Si aplica a nacimientos) */}
       {infoDestete && (

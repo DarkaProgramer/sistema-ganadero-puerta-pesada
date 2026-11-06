@@ -1,5 +1,6 @@
 // Header.jsx — Barra superior con título, notificaciones y usuario
-import { Bell, Menu, ChevronDown } from 'lucide-react';
+import { Menu, ChevronDown } from 'lucide-react';
+import NotificationBell from './NotificationBell';
 import { useRancho } from '../../context/RanchoContext'; // Ajusta la ruta según la ubicación exacta de tu Header
 
 const VIEW_TITLES = {
@@ -12,10 +13,13 @@ const VIEW_TITLES = {
   clientes:      'Clientes y Cuentas por Cobrar',
   calendario:    'Calendario y Eventos',
   configuracion: 'Configuración del Rancho',
-  empleados:     'Gestión de Empleados'
+  empleados:     'Gestión de Empleados',
+  incidencias:    'Reportes e Incidencias',
+  notificaciones: 'Centro de Notificaciones',
+  etapas:         'Etapas de Desarrollo'
 };
 
-export default function Header({ activeView, userName, userRole, onToggleSidebar, alertCount = 3 }) {
+export default function Header({ activeView, userName, userRole, onToggleSidebar, setActiveView }) {
   const { ranchoConfig } = useRancho();
 
   // Comprobación flexible para admin o administrador sin importar mayúsculas
@@ -48,13 +52,8 @@ export default function Header({ activeView, userName, userRole, onToggleSidebar
 
       {/* Derecha: notificaciones + usuario */}
       <div className="flex items-center gap-3">
-        {/* Campanita */}
-        <button className="relative w-9 h-9 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 transition-colors">
-          <Bell size={20} />
-          {alertCount > 0 && (
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-1 ring-white" />
-          )}
-        </button>
+        {/* Campanita (Tarjeta 6): alertas reales del sistema */}
+        <NotificationBell onNavegar={setActiveView} />
 
         {/* Usuario */}
         <div className="flex items-center gap-2 pl-3 border-l border-slate-100 cursor-default select-none">

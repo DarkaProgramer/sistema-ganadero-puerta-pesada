@@ -5,7 +5,7 @@ export function RegistrarPesoForm({ historicoAEditar, animal, onSubmit, onCancel
   const [form, setForm] = useState({
     fecha: historicoAEditar?.fecha ? historicoAEditar.fecha.split('T')[0] : new Date().toISOString().split('T')[0],
     peso: historicoAEditar?.peso || '',
-    etapa: historicoAEditar?.etapa || 'Engorda'
+    etapa: historicoAEditar?.etapa || 'Auto' // 'Auto' = el backend calcula la etapa según la edad (Tarjeta 7)
   });
 
   const handleSubmit = (e) => {
@@ -56,6 +56,10 @@ export function RegistrarPesoForm({ historicoAEditar, animal, onSubmit, onCancel
               onChange={e => setForm({ ...form, etapa: e.target.value })}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white"
             >
+              <option value="Auto">Automática (según edad)</option>
+              {historicoAEditar?.etapa && !['Auto', 'Crecimiento', 'Engorda', 'Reproduccion', 'Destete'].includes(historicoAEditar.etapa) && (
+                <option value={historicoAEditar.etapa}>{historicoAEditar.etapa}</option>
+              )}
               <option value="Crecimiento">Crecimiento</option>
               <option value="Engorda">Engorda</option>
               <option value="Reproduccion">Reproducción</option>

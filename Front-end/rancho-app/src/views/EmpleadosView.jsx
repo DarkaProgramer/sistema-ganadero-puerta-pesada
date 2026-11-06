@@ -1,16 +1,23 @@
 // EmpleadosView.jsx — Actualizado con puestos dinámicos y sin errores de ESLint
 import { useState, useEffect } from 'react';
-import { Users, UserPlus, Trash2, Edit3, Shield, User, Mail, Phone, Briefcase, AlertCircle } from 'lucide-react';
+import { Users, UserPlus, Trash2, Edit3, Shield, User, Mail, Phone, Briefcase, AlertCircle, Eye, Search } from 'lucide-react';
 import EmpleadoForm from './forms/EmpleadoForm';
+import EmpleadoDetalleView from './EmpleadoDetalleView';
+import EstatusBadge from '../components/ui/EstatusBadge';
+import { ESTATUS } from '../utils/estatusEmpleado';
 import { API_URL } from '../config/api';
 
-export default function EmpleadosView() {
+export default function EmpleadosView({ showToast }) {
   const [empleados, setEmpleados] = useState([]);
   const [puestos, setPuestos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState(null);
+  // Tarjeta 1: filtros por estatus y ficha a detalle
+  const [filtroEstatus, setFiltroEstatus] = useState('Todos');
+  const [busqueda, setBusqueda] = useState('');
+  const [detalleId, setDetalleId] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -99,6 +106,23 @@ export default function EmpleadosView() {
     }
   };
 
+  const conteoEstatus = empleados.reduce((acc, e) => ({ ...acc, [e.estatus || 'Activo']: (acc[e.estatus || 'Activo'] || 0) + 1 }), {});
+  const empleadosFiltrados = empleados.filter(e =>
+    (filtroEstatus === 'Todos' || (e.estatus || 'Activo') === filtroEstatus) &&
+    (!busqueda || `${e.nombreCompleto} ${e.correo} ${e.puestoRelacion?.nombre || ''}`.toLowerCase().includes(busqueda.toLowerCase()))
+  );
+
+  if (detalleId) {
+    return (
+      <EmpleadoDetalleView
+        idEmpleado={detalleId}
+        showToast={showToast}
+        onBack={() => { setDetalleId(null); refrescarDatos(); }}
+        onEditar={(emp) => { setDetalleId(null); setEmpleadoSeleccionado(emp); setIsModalOpen(true); }}
+      />
+    );
+  }
+
   return (
     <div className="p-8 max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
@@ -124,12 +148,29 @@ export default function EmpleadosView() {
         </div>
       )}
 
+      {/* Filtros por estatus y búsqueda */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+        <div className="flex flex-wrap gap-2">
+          {['Todos', ...Object.keys(ESTATUS)].map(est => (
+            <button key={est} onClick={() => setFiltroEstatus(est)}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition ${filtroEstatus === est ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}>
+              {est} <span className="opacity-70">({est === 'Todos' ? empleados.length : (conteoEstatus[est] || 0)})</span>
+            </button>
+          ))}
+        </div>
+        <div className="relative">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input value={busqueda} onChange={e => setBusqueda(e.target.value)} placeholder="Buscar por nombre, correo o puesto"
+            className="pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-sm w-full md:w-72 focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white" />
+        </div>
+      </div>
+
       {/* Tabla de Empleados */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
         {loading ? (
           <div className="p-8 text-center text-slate-400">Cargando personal...</div>
-        ) : empleados.length === 0 ? (
-          <div className="p-12 text-center text-slate-400">No hay empleados registrados en el sistema.</div>
+        ) : empleadosFiltrados.length === 0 ? (
+          <div className="p-12 text-center text-slate-400">{empleados.length === 0 ? 'No hay empleados registrados en el sistema.' : 'Ningún empleado coincide con los filtros.'}</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -139,11 +180,12 @@ export default function EmpleadosView() {
                   <th className="py-4 px-6">Correo Electrónico</th>
                   <th className="py-4 px-6">Puesto / Oficio</th>
                   <th className="py-4 px-6">Rol de Acceso</th>
+                  <th className="py-4 px-6">Estatus</th>
                   <th className="py-4 px-6 text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm text-slate-600">
-                {empleados.map((emp) => (
+                {empleadosFiltrados.map((emp) => (
                   <tr key={emp.idEmpleado} className="hover:bg-slate-50/50 transition">
                     <td className="py-4 px-6 font-medium text-slate-800">
                       <div className="flex items-center gap-3">
@@ -180,7 +222,17 @@ export default function EmpleadosView() {
                         {emp.rol}
                       </span>
                     </td>
-                    <td className="py-4 px-6 text-right space-x-1">
+                    <td className="py-4 px-6">
+                      <EstatusBadge estatus={emp.estatus} />
+                    </td>
+                    <td className="py-4 px-6 text-right space-x-1 whitespace-nowrap">
+                      <button
+                        onClick={() => setDetalleId(emp.idEmpleado)}
+                        className="p-2 text-slate-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition inline-flex items-center justify-center"
+                        title="Ver ficha del empleado"
+                      >
+                        <Eye size={16} />
+                      </button>
                       <button
                         onClick={() => { setEmpleadoSeleccionado(emp); setIsModalOpen(true); }}
                         className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition inline-flex items-center justify-center"

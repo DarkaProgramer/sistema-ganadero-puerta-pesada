@@ -47,3 +47,31 @@ Sigue estos pasos para levantar el proyecto en tu entorno de desarrollo:
 ```bash
 git clone <url-de-tu-repositorio>
 cd Proyecto-Integradora
+
+---
+
+## 🆕 Módulos agregados (Tarjetas 1–7)
+
+Ver el detalle y el estado de cada subtarea en [`PRODUCT_BACKLOG.md`](PRODUCT_BACKLOG.md).
+
+| Módulo | API | Vista |
+|---|---|---|
+| Expediente de empleados (estatus, ficha, corrales asignados) | `/api/empleados/:id/expediente`, `/:id/estatus`, `/:id/corrales` | Empleados → 👁 Ver ficha |
+| Inventario Herramientas / Consumibles | `/api/inventario` | Inventario |
+| Ventas y compras | `/api/transacciones` | Ventas |
+| Agenda inteligente + correos | `/api/eventos` | Calendario |
+| Reportes de incidencias | `/api/incidencias` | Reportes |
+| Centro de notificaciones | `/api/notificaciones` | 🔔 campana / Notificaciones |
+| Etapas de desarrollo por especie | `/api/etapas` | Etapas · ficha del animal |
+
+### Actualizar una base de datos existente
+Los cambios al esquema son aditivos (campos nuevos con valor por defecto y tablas nuevas):
+```bash
+cd Back-end
+npm install
+npx prisma db push
+npm run seed:modulos   # etapas por especie, inventario, proveedor, agenda y equipos de ejemplo (idempotente)
+```
+
+### Correo
+Configura `SMTP_*` en `Back-end/.env` (ver `.env.example`). Sin `SMTP_HOST` los correos se generan en modo simulación y se imprimen en la consola del backend. El programador revisa cada 15 min: envía el recordatorio de los eventos marcados con "notificar por correo" el día que ocurren y un resumen diario de stock bajo.

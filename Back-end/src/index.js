@@ -6,6 +6,11 @@ import animalRoutes from './routes/animalRoutes.js';
 import configRoutes from './routes/configRoutes.js'; // <-- 1. Importar las rutas de configuración
 import historicoRoutes from './routes/historicoRoutes.js';
 import saludRoutes from './routes/saludRoutes.js';
+import {
+  expedienteRouter, inventarioRouter, transaccionesRouter, eventosRouter,
+  incidenciasRouter, notificacionesRouter, etapasRouter,
+} from './routes/modulosRoutes.js';
+import { iniciarProgramador } from './services/programador.js';
 
 dotenv.config();
 
@@ -15,7 +20,7 @@ const origenesPermitidos = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map(o => o.trim()).filter(Boolean)
   : null;
 app.use(cors(origenesPermitidos ? { origin: origenesPermitidos } : {}));
-app.use(express.json());
+app.use(express.json({ limit: '5mb' })); // 5mb: las incidencias pueden llevar una foto en base64
 
 const PORT = process.env.PORT || 4000;
 
@@ -25,6 +30,15 @@ app.use('/api/animales', animalRoutes);
 app.use('/api/configuracion', configRoutes); 
 app.use('/api/historicos', historicoRoutes);
 app.use('/api/salud', saludRoutes);
+
+// Módulos nuevos (Tarjetas 1 a 7)
+app.use('/api/empleados', expedienteRouter);
+app.use('/api/inventario', inventarioRouter);
+app.use('/api/transacciones', transaccionesRouter);
+app.use('/api/eventos', eventosRouter);
+app.use('/api/incidencias', incidenciasRouter);
+app.use('/api/notificaciones', notificacionesRouter);
+app.use('/api/etapas', etapasRouter);
 
 app.get('/', (req, res) => {
   res.json({ message: 'API de Rancho Puerta Pesada operando al 100% 🚀' });
@@ -37,4 +51,5 @@ app.get('/health', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en el puerto ${PORT}`);
+  iniciarProgramador();
 });
